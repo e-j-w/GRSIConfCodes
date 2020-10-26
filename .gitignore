@@ -1,0 +1,9 @@
+*~
+SetupConfFile
+CustomChan
+ConstructCalibrationFile
+ChanCheck
+Calibrate
+ResCheck
+Alphacal
+*tmpdatafile*
