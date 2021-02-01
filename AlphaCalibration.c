@@ -116,7 +116,7 @@ Double_t tripleAlphaSpectrum(Double_t *xx, Double_t *p){
 }
 TF1* tasf(TH1* h, const char* name = "tas"){
 // Create a TF1 using the function above and set some intial parameters
- TF1* F = new TF1(name,tripleAlphaSpectrum,0,10000,9); //this sets the limits of the fit in channels (see also line 93)
+ TF1* F = new TF1(name,tripleAlphaSpectrum,0,10000,9); //this sets the limits of the fit in channels (see also line 172)
  F->SetParNames("Pu","Am","Cm","fwhmCm","a","Pu_n","Am_n","offset","gain");
  F->SetNpx(7000);
  F->SetParLimits(0,10,500000);
@@ -169,7 +169,7 @@ TF1* zoomThree(TH1* h, TF1* F){
 }
 void Peaks(Double_t ratio, Double_t constant, Double_t mean, Double_t sigma){
 // Function to draw the individual peaks of the main fit
-   TF1 *myfit = new TF1("myfit","gaus",0,10000); //this sets the limits of the fit in channels (see also line 41)
+   TF1 *myfit = new TF1("myfit","gaus",0,10000); //this sets the limits of the fit in channels (see also line 119)
    myfit->SetParameters(ratio * constant , mean , sigma);
    myfit->SetLineColor(3);
    myfit->Draw("SAME");
