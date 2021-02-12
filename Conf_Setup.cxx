@@ -1,11 +1,11 @@
-//g++ Conf_Setup.C -std=c++0x -o SetupConfFile
+//g++ Conf_Setup.cxx -std=c++0x -o SetupConfFile
 
 #include "CalibrationParameters.h"
 #include "functions.h"
 
 using namespace std;
 
-int num_known_exp = 7; //number of known experiments
+int num_known_exp = 8; //number of known experiments
 string exp_names[] = {
   "tigress",
   "emma",
@@ -14,6 +14,7 @@ string exp_names[] = {
   "bambino",
   "descant",
   "tip",
+  "emmatip",
 };
 string exp_description[] = {
   "TIGRESS 16 Clover Configuration",
@@ -23,6 +24,7 @@ string exp_description[] = {
   "TIGRESS 16 Clover + 2 S3 Detectors Standard Arrangment",
   "GRIFFIN 16 Clover + PACES + SCEPTAR + ZDS + LaBr3 + DESCANT",
   "TIGRESS 16 Clover + TIP",
+  "TIGRESS 12 Clovers + TIP + EMMA Focal Plane",
 };
 
 int search_array(string array[], string search, int len) {
@@ -144,6 +146,18 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     chancounter = makeTIGRESS(1, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeTIP(chancounter, outfile, MSC, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+
+    break;
+  
+  case 7:
+
+    printf("Creating TIGRESS-EMMA 12 Clovers + TIP \n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIPEMMA(chancounter, outfile, MSC, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    chancounter = makeEMMAMisc(chancounter, outfile, MSC);
 
     break;
 

@@ -513,7 +513,39 @@ int makeTIP(int chancounter, const char *inp, const char *mscout, std::vector<st
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, 15, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
+    }
+    chancounter++;
+  }
+  return chancounter;
+}
+
+int makeTIPEMMA(int chancounter, const char *inp, const char *mscout, std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+  char line[128];
+  char var[64];
+  char electronicaddress[32];
+  ofstream outfile;
+  if(chancounter == 0) {
+    outfile.open(inp);
+  }
+  else outfile.open(inp,ios::app);
+
+  for (int i = 0; i < 128; i++) {
+    int port = (i % 256)/16;
+    int channel = i % 16;
+    int collector = (i/256);
+    int DetNum =  i + 1;
+    sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
+    int DetType = 8;
+    sprintf(var,"TPC%03iN00X",DetNum);
+    for(int m = 0; m < MNEMONIC.size(); m++) {
+      if (strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
+        sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
+      }
+    }
+    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
+    if(strcmp(mscout, "NULL") != 0) {
+      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
     }
     chancounter++;
   }

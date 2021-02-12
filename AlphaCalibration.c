@@ -88,9 +88,9 @@ Double_t tripleAlphaSpectrum(Double_t *xx, Double_t *p){
 // Simulate a triple alpha spectrum for comparison to a histogram
 // Energy calibration and width of peaks are parameters given up to quadratic linear
 // Parameters:
-// p0 -- Normalization factor for 239Pu group
-// p1 -- Normalization factor for 241Am group
-// p2 -- Normalization factor for 244Cm group
+// p0 -- Amplitude normalization factor for 239Pu group
+// p1 -- Amplitude normalization factor for 241Am group
+// p2 -- Amplitude normalization factor for 244Cm group
 // p3 -- FWHM of peaks in keV
 // p4 -- Constant offset in counts*
 // p5 -- Width of Pu peaks relative to Cm
@@ -116,13 +116,13 @@ Double_t tripleAlphaSpectrum(Double_t *xx, Double_t *p){
 }
 TF1* tasf(TH1* h, const char* name = "tas"){
 // Create a TF1 using the function above and set some intial parameters
- TF1* F = new TF1(name,tripleAlphaSpectrum,0,10000,9); //this sets the limits of the fit in channels (see also line 172)
+ TF1* F = new TF1(name,tripleAlphaSpectrum,0,10000,9); //this sets the limits of the fit in channels (see also line 201)
  F->SetParNames("Pu","Am","Cm","fwhmCm","a","Pu_n","Am_n","offset","gain");
  F->SetNpx(7000);
  F->SetParLimits(0,10,500000);
  F->SetParLimits(1,10,500000);
  F->SetParLimits(2,10,500000);
- F->SetParLimits(3,20,200);
+ F->SetParLimits(3,20,1000);
  F->SetParLimits(5,0.8,1.3);
  F->SetParLimits(6,0.8,1.2);
 // Search for the peaks in the charge spectrum to initialize gain and offset
@@ -142,7 +142,37 @@ TF1* tasf(TH1* h, const char* name = "tas"){
     auto max = *std::max_element( peaks.begin(), peaks.end());
     Double_t m = (5804.77-5156.59)/(max-min);
     Double_t b = 5804.77-m*max; 
-//Initializing Parameters
+    //Initializing Parameters
+    F->SetParameters(50,50,50,25,0,1,1,b,m);
+    F->SetParLimits(7,b-100,b+100);
+    F->SetParLimits(8,m-0.4,m+0.4);
+ }else if (nfound>=1){
+    cout << " Initial search didn't find enough peaks (only " << nfound << ").  Potentially overlapping peaks."  << endl;
+    Double_t pkval=0;
+    Double_t * xpeaks = s->GetPositionX();  
+    for (int oo=0; oo<=nfound; oo++){
+      if(xpeaks[oo]>100 and xpeaks[oo]<10000){
+         if(xpeaks[oo]>pkval){
+            pkval=xpeaks[oo]; 
+         }
+      }
+      cout << "peak: " << pkval << endl;  
+    }
+    auto max = pkval;
+    auto min = (5156.59/5804.77)*max;
+    Double_t m = (5804.77-5156.59)/(max-min);
+    Double_t b = 5804.77-m*max;
+    //Initializing Parameters
+    F->SetParameters(50,50,50,25,0,1,1,b,m);
+    F->SetParLimits(7,b-100,b+100);
+    F->SetParLimits(8,m-0.4,m+0.4);
+ }else{
+    cout << " Initial search didn't find any peaks.  Guessing some values, fit will probably fail."  << endl;
+    auto min = 5000;
+    auto max = 6000;
+    Double_t m = (5804.77-5156.59)/(max-min);
+    Double_t b = 5804.77-m*max;
+    //Initializing Parameters
     F->SetParameters(50,50,50,25,0,1,1,b,m);
     F->SetParLimits(7,b-100,b+100);
     F->SetParLimits(8,m-0.4,m+0.4);
@@ -239,15 +269,15 @@ void m( int start, int end){
       GAIN.push_back(g);
    }
 // Output the widths of Curium for each channel and its absolute error
-   cout << "CHANNEL" << "\t" << "FWHM (keV)" << "\t\t" << "ERR" << "\t\t" 
-   << "REDUCED CHISQR" << endl;
+   cout << "CHANNEL" << "\t" << "FWHM (keV)" << "\t\t\t" << "ERR" << "\t\t" 
+   << "REDUCED CHISQR" << "\t" << "\% RESOLUTION " << endl;
 // Output gains and offsets to a text file
    ofstream file;
    file.open ("Calibration.txt");
    file << "float GAIN[" << end - start + 1 << "] = {" << GAIN[0];
    for (int j=0; j<warr.size(); j++){    
       cout << workingchannels[j] << ",\t" << warr[j] << ",\t\t" << werrarr[j] 
-      << ",\t" << rchiarr[j] << endl;
+      << ",\t" << rchiarr[j] << ",\t" << warr[j]/5804.77 << endl;
       if (j > 0) {
          file << ", " << GAIN[j];
       }
