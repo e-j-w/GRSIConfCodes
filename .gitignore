@@ -7,4 +7,5 @@ Calibrate
 ResCheck
 Alphacal
 EffCheck
+*.txt
 *tmpdatafile*

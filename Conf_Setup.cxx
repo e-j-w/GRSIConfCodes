@@ -144,7 +144,7 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
     loadSegmentPar(seginp, seggains, segoffsets);
     chancounter = makeTIGRESS(1, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
-    chancounter = makeTIP(chancounter, outfile, MSC, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIP(chancounter, outfile, MSC, csigains, csioffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
 
     break;
@@ -155,7 +155,7 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
     loadSegmentPar(seginp, seggains, segoffsets);
     chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
-    chancounter = makeTIPEMMA(chancounter, outfile, MSC, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIPEMMA(chancounter, outfile, MSC, csigains, csioffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
     chancounter = makeEMMAMisc(chancounter, outfile, MSC);
 

@@ -65,7 +65,7 @@ void HistDraw(char const* infile, char const* calfile, char const* outfile) {
     for (int jentry = 0; jentry < (nentries); jentry++) {
       tree->GetEntry(jentry);
       if (frag->GetChannelNumber() >= 0) myhist[frag->GetChannelNumber()]->Fill(frag->GetEnergy());
-      if (jentry % 10000 == 0) cout << setiosflags(ios::fixed) << "Si Entry " << jentry << " of " << nentries << ", " << 100 * jentry / nentries << "% complete" << "\r" << flush;
+      if (jentry % 10000 == 0) cout << setiosflags(ios::fixed) << "Entry " << jentry << " of " << nentries << ", " << 100 * jentry / nentries << "% complete" << "\r" << flush;
     }
 
     for (int iii = 0; iii < 2000; iii++) {
@@ -73,24 +73,24 @@ void HistDraw(char const* infile, char const* calfile, char const* outfile) {
       if (myhist[iii]->Integral(0, si_nBins) > 10) list->Add(myhist[iii]);
     }
 
-        cout << "Entry " << nentries << " of " << nentries << ", 100% Complete!\n";
+   cout << "Entry " << nentries << " of " << nentries << ", 100% Complete!\n";
 
-        cout << "Histograms written to Hist.root, sorting complete" << endl;
+   cout << "Histograms written to Hist.root, sorting complete" << endl;
 
-        TFile * myfile = new TFile(outfile, "RECREATE");
-        myfile->cd();
-        list->Write();
+   TFile * myfile = new TFile(outfile, "RECREATE");
+   myfile->cd();
+   list->Write();
 	myfile->Write();
-        myfile->Close();
+   myfile->Close();
 }
 
 Double_t tripleAlphaSpectrum(Double_t *xx, Double_t *p){
 // Simulate a triple alpha spectrum for comparison to a histogram
 // Energy calibration and width of peaks are parameters given up to quadratic linear
 // Parameters:
-// p0 -- Amplitude normalization factor for 239Pu group
-// p1 -- Amplitude normalization factor for 241Am group
-// p2 -- Amplitude normalization factor for 244Cm group
+// p0 -- Amplitude normalization factor for 239Pu group (relative to p2)
+// p1 -- Amplitude normalization factor for 241Am group (relative to p2)
+// p2 -- Amplitude normalization factor for 244Cm group (absolute)
 // p3 -- FWHM of peaks in keV
 // p4 -- Constant offset in counts*
 // p5 -- Width of Pu peaks relative to Cm
@@ -102,10 +102,10 @@ Double_t tripleAlphaSpectrum(Double_t *xx, Double_t *p){
  Double_t sigmaPu = sigmaCu*p[5];
  Double_t sigmaAm = sigmaCu*p[6];
 // Now calculate spectrum height based on energies and proportionalities
- Double_t f = p[0] * ( 0.7077 * TMath::Gaus(E,5156.59,sigmaPu)
+ Double_t f = p[0] * p[2] * ( 0.7077 * TMath::Gaus(E,5156.59,sigmaPu)
           +0.1711 * TMath::Gaus(E,5144.30,sigmaPu)
           +0.1194 * TMath::Gaus(E,5105.80,sigmaPu) )
-        +p[1] * ( 0.0036 * TMath::Gaus(E,5544.5,sigmaAm)
+        +p[1] * p[2] * ( 0.0036 * TMath::Gaus(E,5544.5,sigmaAm)
            +0.0166 * TMath::Gaus(E,5388,sigmaAm)
            +0.848 * TMath::Gaus(E,5485.56,sigmaAm)
            +0.131 * TMath::Gaus(E,5442.8,sigmaAm) )
@@ -116,13 +116,13 @@ Double_t tripleAlphaSpectrum(Double_t *xx, Double_t *p){
 }
 TF1* tasf(TH1* h, const char* name = "tas"){
 // Create a TF1 using the function above and set some intial parameters
- TF1* F = new TF1(name,tripleAlphaSpectrum,0,10000,9); //this sets the limits of the fit in channels (see also line 201)
+ TF1* F = new TF1(name,tripleAlphaSpectrum,100,10000,9); //this sets the limits of the fit in channels (see also line 201)
  F->SetParNames("Pu","Am","Cm","fwhmCm","a","Pu_n","Am_n","offset","gain");
  F->SetNpx(7000);
- F->SetParLimits(0,10,500000);
- F->SetParLimits(1,10,500000);
- F->SetParLimits(2,10,500000);
- F->SetParLimits(3,20,1000);
+ F->SetParLimits(0,0.7,1.8); // relative Pu group normalization
+ F->SetParLimits(1,0.7,1.8); // relative Am group normalization
+ F->SetParLimits(2,10,500000); // absolute Cm group normalization
+ F->SetParLimits(3,200,1000);
  F->SetParLimits(5,0.8,1.3);
  F->SetParLimits(6,0.8,1.2);
 // Search for the peaks in the charge spectrum to initialize gain and offset
@@ -130,10 +130,19 @@ TF1* tasf(TH1* h, const char* name = "tas"){
  int npeaks = 20;
  TSpectrum * s = new TSpectrum(2*npeaks);
  Int_t nfound = s->Search(h, 2, "", 0.13);
- if (nfound>=3){
-    Double_t * xpeaks = s->GetPositionX();  
+ Int_t numAboveBG = 0;
+ Double_t * xpeaks = s->GetPositionX();
+ cout << "Peaks: ";
+ for (int oo=0; oo<=nfound; oo++){
+   if(xpeaks[oo]>100 and xpeaks[oo]<10000){
+      cout << xpeaks[oo] << " ";
+      numAboveBG++;
+   }
+ }
+ cout << endl;
+ if (numAboveBG>=3){
     for (int oo=0; oo<=nfound; oo++){
-       if (xpeaks[oo]>400 and xpeaks[oo]<10000){
+       if (xpeaks[oo]>100 and xpeaks[oo]<10000){
           peaks.push_back(xpeaks[oo]); 
           cout << "peak: " << xpeaks[oo] << endl;  
       }
@@ -143,13 +152,12 @@ TF1* tasf(TH1* h, const char* name = "tas"){
     Double_t m = (5804.77-5156.59)/(max-min);
     Double_t b = 5804.77-m*max; 
     //Initializing Parameters
-    F->SetParameters(50,50,50,25,0,1,1,b,m);
+    F->SetParameters(1.0,1.0,50,25,0,1,1,b,m);
     F->SetParLimits(7,b-100,b+100);
     F->SetParLimits(8,m-0.4,m+0.4);
- }else if (nfound>=1){
+ }else if (numAboveBG>=1){
     cout << " Initial search didn't find enough peaks (only " << nfound << ").  Potentially overlapping peaks."  << endl;
     Double_t pkval=0;
-    Double_t * xpeaks = s->GetPositionX();  
     for (int oo=0; oo<=nfound; oo++){
       if(xpeaks[oo]>100 and xpeaks[oo]<10000){
          if(xpeaks[oo]>pkval){
@@ -158,12 +166,12 @@ TF1* tasf(TH1* h, const char* name = "tas"){
       }
       cout << "peak: " << pkval << endl;  
     }
-    auto max = pkval;
-    auto min = (5156.59/5804.77)*max;
+    auto max = pkval*(5804.77/5485.56);
+    auto min = (5105.80/5804.77)*max;
     Double_t m = (5804.77-5156.59)/(max-min);
     Double_t b = 5804.77-m*max;
     //Initializing Parameters
-    F->SetParameters(50,50,50,25,0,1,1,b,m);
+    F->SetParameters(1.0,1.0,50,25,0,1,1,b,m);
     F->SetParLimits(7,b-100,b+100);
     F->SetParLimits(8,m-0.4,m+0.4);
  }else{
@@ -173,7 +181,7 @@ TF1* tasf(TH1* h, const char* name = "tas"){
     Double_t m = (5804.77-5156.59)/(max-min);
     Double_t b = 5804.77-m*max;
     //Initializing Parameters
-    F->SetParameters(50,50,50,25,0,1,1,b,m);
+    F->SetParameters(1.0,1.0,50,25,0,1,1,b,m);
     F->SetParLimits(7,b-100,b+100);
     F->SetParLimits(8,m-0.4,m+0.4);
  }
@@ -199,7 +207,7 @@ TF1* zoomThree(TH1* h, TF1* F){
 }
 void Peaks(Double_t ratio, Double_t constant, Double_t mean, Double_t sigma){
 // Function to draw the individual peaks of the main fit
-   TF1 *myfit = new TF1("myfit","gaus",0,10000); //this sets the limits of the fit in channels (see also line 119)
+   TF1 *myfit = new TF1("myfit","gaus",100,10000); //this sets the limits of the fit in channels (see also line 119)
    myfit->SetParameters(ratio * constant , mean , sigma);
    myfit->SetLineColor(3);
    myfit->Draw("SAME");
@@ -235,7 +243,7 @@ void m( int start, int end){
       cout << iii << " :";   
       TF1* f=tasf(h); 
       f = zoomThree(h,f); f->Draw("SAME"); f = zoomThree(h,f); 
-      h->Fit("tas","LQ"); h->Fit("tas","LQ");
+      h->Fit("tas","QM"); h->Fit("tas","QM");
 // Get parameters, FWHM, and draw the individual peaks    
       Double_t g = f->GetParameter("gain");
       Double_t o = f->GetParameter("offset");     
@@ -246,8 +254,8 @@ void m( int start, int end){
       Double_t Pu_n = f->GetParameter("Pu_n"); Double_t sigmaPu = (Pu_n*sigmaCm);
       Double_t Am_n = f->GetParameter("Am_n"); Double_t sigmaAm = (Am_n*sigmaCm);
       Double_t Cm = f->GetParameter("Cm");
-      Double_t Pu = f->GetParameter("Pu");
-      Double_t Am = f->GetParameter("Am");
+      Double_t Pu = f->GetParameter("Pu")*f->GetParameter("Cm");
+      Double_t Am = f->GetParameter("Am")*f->GetParameter("Cm");
       Double_t ratios[9]={0.7077,0.1711,0.1194,0.0036,0.0166,0.848,0.131,0.769,
       0.231};
       Double_t constants[9]={Pu,Pu,Pu,Am,Am,Am,Am,Cm,Cm};           
@@ -255,9 +263,16 @@ void m( int start, int end){
       (5388-o)/g,(5485.56-o)/g,(5442.8-o)/g,(5804.77-o)/g,(5762.16-o)/g};
       Double_t sigmas[9]={sigmaPu/g,sigmaPu/g,sigmaPu/g,sigmaAm/g,sigmaAm/g,
       sigmaAm/g,sigmaAm/g,sigmaCm/g,sigmaCm/g};
-      for (int ii=7; ii<8; ii++){
-         Peaks(ratios[ii],constants[ii],means[ii],sigmas[ii]);
-      }
+// Draw individual peaks
+      Peaks(ratios[0],constants[0],means[0],sigmas[0]);
+      //Peaks(ratios[1],constants[1],means[1],sigmas[1]);
+      //Peaks(ratios[2],constants[2],means[2],sigmas[2]);
+      //Peaks(ratios[3],constants[3],means[3],sigmas[3]);
+      //Peaks(ratios[4],constants[4],means[4],sigmas[4]);
+      Peaks(ratios[5],constants[5],means[5],sigmas[5]);
+      //Peaks(ratios[6],constants[6],means[6],sigmas[6]);
+      Peaks(ratios[7],constants[7],means[7],sigmas[7]);
+      Peaks(ratios[8],constants[8],means[8],sigmas[8]);
 // Add canvas to list      
       list->Add(C[iii-start]);  
 // Add the FWHM and error of Curium peak
@@ -275,13 +290,17 @@ void m( int start, int end){
    ofstream file;
    file.open ("Calibration.txt");
    file << "float GAIN[" << end - start + 1 << "] = {" << GAIN[0];
-   for (int j=0; j<warr.size(); j++){    
+   Double_t avg_res = 0.;
+   for (int j=0; j<warr.size(); j++){
+      avg_res += warr[j]/5804.77;
       cout << workingchannels[j] << ",\t" << warr[j] << ",\t\t" << werrarr[j] 
       << ",\t" << rchiarr[j] << ",\t" << warr[j]/5804.77 << endl;
       if (j > 0) {
          file << ", " << GAIN[j];
       }
-   } 
+   }
+   avg_res = avg_res / warr.size();
+   cout << "Average \% resolution: " << avg_res << endl;
    file << "};\n" << "float OFFSET[" << end - start + 1 << "] = {" << OFFSET[0];
    for (int j=0; j<warr.size(); j++){    
       if (j > 0) {
@@ -322,7 +341,8 @@ int main(int argc, char **argv){
 
 	if(argc == 1)
 	{
-		cout << "Insufficient arguments, provide argument tree files" << endl;
+		cout << "Insufficient arguments:" << endl;
+		cout << "Alphacal fragment_tree_file calibration_file min_channel max_channel" << endl;
 		return 0;
 	}
 
@@ -368,6 +388,11 @@ int main(int argc, char **argv){
 	//Convert the channel minimum and maximum characters to integers so they can be used as input in m()
 	ChMin_int = atoi(ChMin);
 	ChMax_int = atoi(ChMax);
+
+	if((ChMax_int - ChMin_int)<1){
+		cout << "ERROR: must sort at least one channel." << endl;
+		return 0;
+	}
 
 	HistDraw(ffile,calfile, outfile);
 	m(ChMin_int,ChMax_int);

@@ -9,6 +9,10 @@ using namespace std;
 void zerogains(float gain[], float offset[], int len);
 void zerogains(float gain[], float offset[], float non_lin[], int len);
 
+/* TIGRESS CABLING MAP */
+const int tigCollector[16]    = {0,1,2,2,3,0,3,1,3,2,3,2,0,1,1,0}; //map of TIGRESS position to collector
+const int tigCollectorPos[16] = {1,3,0,2,0,0,1,2,2,1,3,3,2,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
+
 void write_to_msc(const char * msc, int chancounter, char electronicaddress[], char var[], int DetType, const char *digitizer) {
   char line[128];
   ofstream mscnames;
@@ -66,15 +70,21 @@ int makeTIGRESS(int first, int last, int chancounter, const char *inp, const cha
   else outfile.open(inp,ios::app);
 
   int num_clover = last - first + 1;
+  //cout << "first: " << first << ", last: " << last << ", num_clover: " << num_clover << endl;
 
   for (int i = 0; i < num_clover*64; i++) {
     int DetNum = (i / 64) + first;
-    int port = (i % 256) / 16;
+    if(DetNum > num_clover)
+      continue;
+    //int port = (i % 256) / 16;
     int channel = i % 16;
+    //int collector = (i / 256) + first / 5;
+	int collector = tigCollector[DetNum-1];
+    int port = (i % 64) / 16 + (tigCollectorPos[DetNum-1]*4);
     int cryNum = (port % 4);
-    int collector = (i / 256) + first / 5;
     char electronicaddress[32];
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
+    //cout << "det: " << DetNum << ", address: " << electronicaddress << endl;
     if (channel < 15) {
       char colour[1];
       if (cryNum == 0) sprintf(colour, "B");
@@ -488,7 +498,7 @@ int makeS3Bambino(int chancounter, const char *inp, const char *mscout, float s3
   return chancounter;
 }
 
-int makeTIP(int chancounter, const char *inp, const char *mscout, std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+int makeTIP(int chancounter, const char *inp, const char *mscout, float csigains[], float csioffsets[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
   char line[128];
   char var[64];
   char electronicaddress[32];
@@ -501,7 +511,8 @@ int makeTIP(int chancounter, const char *inp, const char *mscout, std::vector<st
   for (int i = 0; i < 128; i++) {
     int port = (i % 256)/16;
     int channel = i % 16;
-    int collector = (i/256) + 4;
+    //int collector = (i/256) + 4;
+	int collector = (i/256);
     int DetNum =  i + 1;
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     int DetType = 8;
@@ -511,7 +522,7 @@ int makeTIP(int chancounter, const char *inp, const char *mscout, std::vector<st
         sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
       }
     }
-    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
+    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << csigains[i] << "\t" << csioffsets[i] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
       write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
     }
@@ -520,7 +531,7 @@ int makeTIP(int chancounter, const char *inp, const char *mscout, std::vector<st
   return chancounter;
 }
 
-int makeTIPEMMA(int chancounter, const char *inp, const char *mscout, std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+int makeTIPEMMA(int chancounter, const char *inp, const char *mscout, float csigains[], float csioffsets[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
   char line[128];
   char var[64];
   char electronicaddress[32];
@@ -543,7 +554,7 @@ int makeTIPEMMA(int chancounter, const char *inp, const char *mscout, std::vecto
         sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
       }
     }
-    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
+    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << csigains[i] << "\t" << csioffsets[i] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
       write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
     }
