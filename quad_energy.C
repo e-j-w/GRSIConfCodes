@@ -103,14 +103,14 @@ void fit_lin_equation(TList *list, Double_t energy[], Double_t energy_er[], Doub
 //using linear calibration, estimates the location of the centroids
 //and then refines that estimate
 void find_centroids(TH1F *hist[], Double_t energy[], Double_t energy_er[], Double_t lin_gains[], Double_t lin_offsets[],
-					Int_t start_pos, Int_t num_peaks_used, Double_t** centroids, Double_t** centroids_er) {
+					Int_t start_pos, Int_t num_peaks_used, Double_t** centroids, Double_t** centroids_er, Int_t source_num) {
 
   for (int i = 0; i < num_cores; i++) {
     //if this linear equation is null, skip this core
     if (lin_gains[i] == -1 && lin_offsets[i] == -1) {
       for (int j = 0; j < num_peaks_used; j++) {
-	centroids[i][j] = -1;
-	centroids_er[i][j] = -1;
+        centroids[i][j] = -1;
+        centroids_er[i][j] = -1;
       }//for
       continue;
     }//if
@@ -136,7 +136,11 @@ void find_centroids(TH1F *hist[], Double_t energy[], Double_t energy_er[], Doubl
       hist[i]->Fit(fit, "QR+");
       centroids[i][start_pos + j] = fit->GetParameter(1);
       centroids_er[i][start_pos + j] = fit->GetParError(1);
-      cout << "Graph " << i << " Guess: " << x_guess << " Actual: " << centroids[i][start_pos + j] << " " << fit->GetChisquare()/fit->GetNDF() << endl;
+      cout << "Graph " << i << " Guess: " << x_guess << " Actual: " << centroids[i][start_pos + j] << " FWHM: " << 2.35482*fit->GetParameter(2) <<  " Red. chisq: " << fit->GetChisquare()/fit->GetNDF() << endl;
+      if((source_num==3)&&(j==1)){
+        //co60 2nd peak
+        cout << "Graph " << i << " Resolution at 1332 keV: " << 1332.492*2.35482*fit->GetParameter(2)/centroids[i][start_pos + j] << " keV" << endl;
+      }
     }//for
   }//for
 }//find_centroids
@@ -215,15 +219,15 @@ void quad_energy() {
   for (int k = 0; k < num_sources; k++) {
     for (int i = 0; i < num_known_sources; i++) {
       if ( source[k].compare(source_names[i])==0) {
- 	move_into_array(energy, source_energy[i], num_proc_peaks, num_peaks[i]);
-	move_into_array(energy_er, source_energy_er[i], num_proc_peaks, num_peaks[i]);
-	load_histograms("CalHist.root", quad_hist[num_proc_sources], k, num_cores);
- 	for (int j = 0; j < num_cores; j++) {
-   	  list->Add(quad_hist[num_proc_sources][j]);
-	}//for
-	find_centroids(quad_hist[num_proc_sources], source_energy[i], source_energy_er[i],lin_gains, lin_offsets, num_proc_peaks, num_peaks[i],	centroids, centroids_er);
-	num_proc_peaks += num_peaks[i];
-	num_proc_sources++;
+        move_into_array(energy, source_energy[i], num_proc_peaks, num_peaks[i]);
+        move_into_array(energy_er, source_energy_er[i], num_proc_peaks, num_peaks[i]);
+        load_histograms("CalHist.root", quad_hist[num_proc_sources], k, num_cores);
+        for (int j = 0; j < num_cores; j++) {
+            list->Add(quad_hist[num_proc_sources][j]);
+        }//for
+        find_centroids(quad_hist[num_proc_sources], source_energy[i], source_energy_er[i],lin_gains, lin_offsets, num_proc_peaks, num_peaks[i],	centroids, centroids_er,i);
+        num_proc_peaks += num_peaks[i];
+        num_proc_sources++;
       }//if
     }//for
   }//for

@@ -2,7 +2,7 @@
 orCondition0 = STRING[2] :
 [32] CSI-S-1
 [32] TIGa-S-1
-coincWindow0 = INT : 1000
+coincWindow0 = INT : 250
 EnabledDetTypes = STRING[14] :
 [32] TIGa
 [32] TIGb
@@ -21,9 +21,9 @@ EnabledDetTypes = STRING[14] :
 
 [/Filter/Filters/TIP-or-Ge]
 orCondition0 = STRING : [32] TIGa-S-1
-coincWindow0 = INT : 1000
+coincWindow0 = INT : 250
 orCondition1 = STRING : [32] CSI-S-1
-coincWindow1 = INT : 1000
+coincWindow1 = INT : 250
 EnabledDetTypes = STRING[14] :
 [32] TIGa
 [32] TIGb

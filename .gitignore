@@ -8,4 +8,5 @@ ResCheck
 Alphacal
 EffCheck
 *.txt
+*.cal
 *tmpdatafile*

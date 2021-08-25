@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int num_known_exp = 8; //number of known experiments
+int num_known_exp = 10; //number of known experiments
 string exp_names[] = {
   "tigress",
   "emma",
@@ -15,6 +15,8 @@ string exp_names[] = {
   "descant",
   "tip",
   "emmatip",
+  "tipjune2021",
+  "emmasep2021",
 };
 string exp_description[] = {
   "TIGRESS 16 Clover Configuration",
@@ -25,6 +27,8 @@ string exp_description[] = {
   "GRIFFIN 16 Clover + PACES + SCEPTAR + ZDS + LaBr3 + DESCANT",
   "TIGRESS 16 Clover + TIP",
   "TIGRESS 12 Clovers + TIP + EMMA Focal Plane",
+  "June 2021 - 13 TIGRESS + 3 GRIFFIN + TIP",
+  "Sep 2021 - TIGRESS 12 Clovers + S3 + SSB + EMMA Focal Plane",
 };
 
 int search_array(string array[], string search, int len) {
@@ -159,6 +163,45 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
     chancounter = makeEMMAMisc(chancounter, outfile, MSC);
 
+    break;
+
+  case 8:
+
+    printf("Creating June 2021 - 13 TIGRESS + 3 GRIFFIN + TIP \n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(1, 1, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(2, 2, -2, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(3, 3, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(4, 4, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeGRIFFINatTIGRESS(5, 5, chancounter, outfile, MSC, gain, offset, non_lin, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(6, 6, 0, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeGRIFFINatTIGRESS(7, 7, -2, chancounter, outfile, MSC, gain, offset, non_lin, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeGRIFFINatTIGRESS(8, 8, 0, chancounter, outfile, MSC, gain, offset, non_lin, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(9, 9, -4, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(10, 10, 0, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(11, 11, -4, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(12, 12, 0, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(13, 13, 0, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(14, 14, 0, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(15, 15, 0, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(16, 16, 0, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIP(chancounter, outfile, MSC, csigains, csioffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+
+    break;
+
+  case 9:
+
+    printf("Sep 2021 - TIGRESS 12 Clovers + S3 + SSB + EMMA Focal Plane\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(1, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+
+    zerogains(s3gains, s3offsets, (sizeof(s3gains)/sizeof(s3gains[0])));
+    chancounter = makeS3Emma(chancounter, outfile, MSC, s3gains, s3offsets, ring, sector, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    chancounter = makeEMMAMisc(chancounter, outfile, MSC);
     break;
 
   default:

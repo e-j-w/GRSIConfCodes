@@ -59,7 +59,7 @@ int makeRF(int chancounter, const char *inp, const char *mscout, int collector, 
   return chancounter;
 }
 
-int makeTIGRESS(int first, int last, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], float seggains[960], float segoffsets[960], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+int makeTIGRESS(int first, int last, int portOffset, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], float seggains[960], float segoffsets[960], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
   char line[128];
   char var[64];
   int DetType;
@@ -79,8 +79,8 @@ int makeTIGRESS(int first, int last, int chancounter, const char *inp, const cha
     //int port = (i % 256) / 16;
     int channel = i % 16;
     //int collector = (i / 256) + first / 5;
-	int collector = tigCollector[DetNum-1];
-    int port = (i % 64) / 16 + (tigCollectorPos[DetNum-1]*4);
+    int collector = tigCollector[DetNum-1];
+    int port = (i % 64) / 16 + (tigCollectorPos[DetNum-1]*4) + portOffset;
     int cryNum = (port % 4);
     char electronicaddress[32];
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
@@ -124,6 +124,89 @@ int makeTIGRESS(int first, int last, int chancounter, const char *inp, const cha
   outfile.close();
   return chancounter;
 }
+
+int makeTIGRESS(int first, int last, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], float seggains[960], float segoffsets[960], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+  makeTIGRESS(first,last,0,chancounter,inp,mscout,gain,offset,non_lin,seggains,segoffsets,MNEMONIC,customcollector,customport,customchannel);
+}
+
+int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+
+  char line[128];
+  char var[64];
+  int DetType;
+  int cryNum;
+  ofstream outfile;
+  if(chancounter == 0) {
+    outfile.open(inp);
+  }
+  else outfile.open(inp,ios::app);
+  int num_clover = last - first + 1;
+
+  for (int i = 0; i < num_clover*32; i++) {
+    int DetNum = (i / 32) + 1;
+    int collector = tigCollector[DetNum-1];
+    //int collector = (i / 256);
+    int port = (i % 32) / 16 + (tigCollectorPos[DetNum-1]*4) + portOffset;
+    //int port = (i % 256) / 16;
+    int channel = i % 16;
+    int ab = port%2;
+    if(channel == 0) cryNum = 0;
+    if(channel == 1) cryNum = 1;
+    if(channel == 2) cryNum = 2;
+    if(channel == 3) cryNum = 3;
+    if(channel < 10 && channel > 4){
+      if(ab==0) cryNum = 0;
+      else cryNum = 2;
+    }
+    else if(channel < 15 && channel > 9){
+      if(ab==0) cryNum = 1;
+      else cryNum = 3;
+    }
+    char electronicaddress[32];
+    sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
+    if (channel < 15 && channel != 4 ) {
+      char colour[1];
+      if (cryNum == 0) sprintf(colour, "B");
+      else if (cryNum == 1) sprintf(colour, "G");
+      else if (cryNum == 2) sprintf(colour, "R");
+      else if (cryNum == 3) sprintf(colour, "W");
+
+      if (channel < 4 && ab == 0) {
+        DetType = 0;
+        sprintf(var, "GRG%2.2i%sN00A", DetNum, colour);
+      } else if (channel < 4 && ab != 0) {
+        DetType = 1;
+        sprintf(var, "GRG%2.2i%sN00B", DetNum, colour);
+      } else if (channel > 4 && channel < 10) {
+        DetType = 7;
+        sprintf(var, "GRS%2.2i%sN%2.2iX", DetNum, colour,channel - 4);
+      } else if (channel < 15 && channel > 9) {
+        DetType = 7;
+        sprintf(var, "GRS%2.2i%sN%2.2iX", DetNum, colour, channel - 9);
+      }
+
+      for(int m = 0; m < MNEMONIC.size(); m++) {
+        if (strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
+          sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
+        }
+      }
+      int aNum = ((DetNum) - 1) * 4 + cryNum;
+      if (channel < 4) outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << gain[aNum] << "\t" << offset[aNum] << "\t" << non_lin[aNum] << "\t" << "\tGRF16\n";
+      else outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tGRF16\n";
+      if (strcmp(mscout, "NULL") != 0) {
+        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+      }
+      chancounter++;
+    }
+  }
+  outfile.close();
+  return chancounter;
+}
+
+int makeGRIFFINatTIGRESS(int first, int last, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+  makeGRIFFINatTIGRESS(first,last,0,chancounter,inp,mscout,gain,offset,non_lin,MNEMONIC,customcollector,customport,customchannel);
+}
+
 
 int makeGRIFFIN(int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
 

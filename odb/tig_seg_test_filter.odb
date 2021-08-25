@@ -1,0 +1,83 @@
+[/Filter/Filters/TIG-Seg-test]
+orCondition0 = STRING[2] :
+[32] TIGa-S-1
+[32] TIGs-S-1
+coincWindow0 = INT : 250
+EnabledDetTypes = STRING[14] :
+[32] TIGa
+[32] TIGb
+[32] TIGs
+[32] TIS
+[32] SI1p
+[32] SI1n
+[32] SI2p
+[32] SI2n
+[32] EMT
+[32] SSB
+[32] Gasp
+[32] Gasn
+[32] CSI
+[32] SPI
+
+[/Filter/Filters/TIG-Seg-Seg-test]
+orCondition0 = STRING[2] :
+[32] TIGa-S-1
+[32] TIGs-C-2-250
+coincWindow0 = INT : 250
+EnabledDetTypes = STRING[14] :
+[32] TIGa
+[32] TIGb
+[32] TIGs
+[32] TIS
+[32] SI1p
+[32] SI1n
+[32] SI2p
+[32] SI2n
+[32] EMT
+[32] SSB
+[32] Gasp
+[32] Gasn
+[32] CSI
+[32] SPI
+
+[/Filter/Filters/TIG-TIG-Seg-Seg-test]
+orCondition0 = STRING[2] :
+[32] TIGa-C-2-250
+[32] TIGs-C-2-250
+coincWindow0 = INT : 250
+EnabledDetTypes = STRING[14] :
+[32] TIGa
+[32] TIGb
+[32] TIGs
+[32] TIS
+[32] SI1p
+[32] SI1n
+[32] SI2p
+[32] SI2n
+[32] EMT
+[32] SSB
+[32] Gasp
+[32] Gasn
+[32] CSI
+[32] SPI
+
+[/Filter/Filters/TIG-or-Seg-test]
+orCondition0 = STRING : [32] TIGa-S-1
+coincWindow0 = INT : 250
+orCondition1 = STRING : [32] TIGs-S-1
+coincWindow1 = INT : 250
+EnabledDetTypes = STRING[14] :
+[32] TIGa
+[32] TIGb
+[32] TIGs
+[32] TIS
+[32] SI1p
+[32] SI1n
+[32] SI2p
+[32] SI2n
+[32] EMT
+[32] SSB
+[32] Gasp
+[32] Gasn
+[32] CSI
+[32] SPI
