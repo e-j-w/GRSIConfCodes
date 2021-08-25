@@ -10,7 +10,7 @@ Revisions (Oct 2020 - present): J. Williams
 
 Requires GRSISort to be installed, with the `$GRSISYS` environment variable configured.
 
-Instructions on how to use these codes are at: https://grsi.wiki.triumf.ca/index.php/Stephens_page_of_things
+Instructions on how to use these codes are on the [GRSI wiki](https://grsi.wiki.triumf.ca/index.php/Stephens_page_of_things) or [here](doc/stephens_page_of_things.pdf).
 
 ## Dev history
 

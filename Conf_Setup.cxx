@@ -94,7 +94,7 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
 
     zerogains(s3gains, s3offsets, (sizeof(s3gains)/sizeof(s3gains[0])));
-    chancounter = makeS3Emma(chancounter, outfile, MSC, s3gains, s3offsets, ring, sector, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeS3Emma(chancounter, 4, outfile, MSC, s3gains, s3offsets, ring, sector, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
     chancounter = makeEMMAMisc(chancounter, outfile, MSC);
     break;
@@ -196,10 +196,9 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     printf("Sep 2021 - TIGRESS 12 Clovers + S3 + SSB + EMMA Focal Plane\n");
     zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
     loadSegmentPar(seginp, seggains, segoffsets);
-    chancounter = makeTIGRESS(1, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
-
+    chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
     zerogains(s3gains, s3offsets, (sizeof(s3gains)/sizeof(s3gains[0])));
-    chancounter = makeS3Emma(chancounter, outfile, MSC, s3gains, s3offsets, ring, sector, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeS3Emma(chancounter, 4, outfile, MSC, s3gains, s3offsets, ring, sector, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
     chancounter = makeEMMAMisc(chancounter, outfile, MSC);
     break;
@@ -226,6 +225,21 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     sprintf(line, "trunc \"/DAQ/MSC/quadratic\" '%i'", chancounter);
     mscnames << line << "\n";
     sprintf(line, "trunc \"/DAQ/MSC/digitizer\" '%i'", chancounter);
+    mscnames << line << "\n";
+
+    sprintf(line, "trunc \"/DAQ/PSC/PSC\" '%i'", chancounter);
+    mscnames << line << "\n";
+    sprintf(line, "trunc \"/DAQ/PSC/chan\" '%i'", chancounter);
+    mscnames << line << "\n";
+    sprintf(line, "trunc \"/DAQ/PSC/datatype\" '%i'", chancounter);
+    mscnames << line << "\n";
+    sprintf(line, "trunc \"/DAQ/PSC/gain\" '%i'", chancounter);
+    mscnames << line << "\n";
+    sprintf(line, "trunc \"/DAQ/PSC/offset\" '%i'", chancounter);
+    mscnames << line << "\n";
+    sprintf(line, "trunc \"/DAQ/PSC/quadratic\" '%i'", chancounter);
+    mscnames << line << "\n";
+    sprintf(line, "trunc \"/DAQ/PSC/digitizer\" '%i'", chancounter);
     mscnames << line << "\n";
 
     mscnames.close();

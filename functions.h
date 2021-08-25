@@ -11,7 +11,7 @@ void zerogains(float gain[], float offset[], float non_lin[], int len);
 
 /* TIGRESS CABLING MAP */
 const int tigCollector[16]    = {0,1,2,2,3,0,3,1,3,2,3,2,0,1,1,0}; //map of TIGRESS position to collector
-const int tigCollectorPos[16] = {1,3,0,2,0,0,1,2,2,1,3,3,2,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
+const int tigCollectorPos[16] = {2,3,0,2,0,0,1,2,2,1,3,3,1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
 
 void write_to_msc(const char * msc, int chancounter, char electronicaddress[], char var[], int DetType, const char *digitizer) {
   char line[128];
@@ -34,6 +34,21 @@ void write_to_msc(const char * msc, int chancounter, char electronicaddress[], c
   sprintf(line, "set \"/DAQ/MSC/quadratic[%i]\" '0'", chancounter);
   mscnames << line << "\n";
   sprintf(line, "set \"/DAQ/MSC/digitizer[%i]\" '%s'", chancounter, digitizer);
+  mscnames << line << "\n";
+
+  sprintf(line, "set \"/DAQ/PSC/PSC[%i]\" '%s'", chancounter, electronicaddress);
+  mscnames << line << "\n";
+  sprintf(line, "set \"/DAQ/PSC/chan[%i]\" '%s'", chancounter, var);
+  mscnames << line << "\n";
+  sprintf(line, "set \"/DAQ/PSC/datatype[%i]\" '%i'", chancounter, DetType);
+  mscnames << line << "\n";
+  sprintf(line, "set \"/DAQ/PSC/gain[%i]\" '1'", chancounter);
+  mscnames << line << "\n";
+  sprintf(line, "set \"/DAQ/PSC/offset[%i]\" '0'", chancounter);
+  mscnames << line << "\n";
+  sprintf(line, "set \"/DAQ/PSC/quadratic[%i]\" '0'", chancounter);
+  mscnames << line << "\n";
+  sprintf(line, "set \"/DAQ/PSC/digitizer[%i]\" '%s'", chancounter, digitizer);
   mscnames << line << "\n";
   mscnames.close();
 }
@@ -70,11 +85,11 @@ int makeTIGRESS(int first, int last, int portOffset, int chancounter, const char
   else outfile.open(inp,ios::app);
 
   int num_clover = last - first + 1;
-  //cout << "first: " << first << ", last: " << last << ", num_clover: " << num_clover << endl;
+  cout << "Making " << num_clover << " TIGRESS clovers, positions " << first << " through " << last << "." << endl; 
 
   for (int i = 0; i < num_clover*64; i++) {
     int DetNum = (i / 64) + first;
-    if(DetNum > num_clover)
+    if(DetNum > 16)
       continue;
     //int port = (i % 256) / 16;
     int channel = i % 16;
@@ -126,7 +141,7 @@ int makeTIGRESS(int first, int last, int portOffset, int chancounter, const char
 }
 
 int makeTIGRESS(int first, int last, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], float seggains[960], float segoffsets[960], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
-  makeTIGRESS(first,last,0,chancounter,inp,mscout,gain,offset,non_lin,seggains,segoffsets,MNEMONIC,customcollector,customport,customchannel);
+  return makeTIGRESS(first,last,0,chancounter,inp,mscout,gain,offset,non_lin,seggains,segoffsets,MNEMONIC,customcollector,customport,customchannel);
 }
 
 int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
@@ -204,7 +219,7 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
 }
 
 int makeGRIFFINatTIGRESS(int first, int last, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
-  makeGRIFFINatTIGRESS(first,last,0,chancounter,inp,mscout,gain,offset,non_lin,MNEMONIC,customcollector,customport,customchannel);
+  return makeGRIFFINatTIGRESS(first,last,0,chancounter,inp,mscout,gain,offset,non_lin,MNEMONIC,customcollector,customport,customchannel);
 }
 
 
@@ -486,7 +501,7 @@ int makeEMMAMisc(int chancounter, const char *inp, const char *mscout) {
 }
 
 // Upstream S3 in EMMA Chamber
-int makeS3Emma(int chancounter, const char *inp, const char *mscout, float s3gains[], float s3offsets[], int ring[], int sector[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+int makeS3Emma(int chancounter, const int collector, const char *inp, const char *mscout, float s3gains[], float s3offsets[], int ring[], int sector[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
   char line[128];
   char var[64];
   char electronicaddress[32];
@@ -499,7 +514,6 @@ int makeS3Emma(int chancounter, const char *inp, const char *mscout, float s3gai
   for (int i = 0; i < 60; i++) {
     int port = (i % 256)/16 ;
     int channel = i % 16;
-    int collector = (i/256);
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     if(i<32) {
       int DetType = 4;
