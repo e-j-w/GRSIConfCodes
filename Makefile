@@ -2,7 +2,7 @@ CPPFLAGS = -std=c++0x
 
 all: SetupConfFile CustomChan ConstructCalibrationFile ChanCheck Calibrate ResCheck Alphacal EffCheck
 
-SetupConfFile: Conf_Setup.cxx
+SetupConfFile: Conf_Setup.cxx functions.h
 	g++ Conf_Setup.cxx $(CPPFLAGS) -o SetupConfFile
 CustomChan: CustomChannelSetup.cxx
 	g++ CustomChannelSetup.cxx $(CPPFLAGS) -o CustomChan

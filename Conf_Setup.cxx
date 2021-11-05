@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int num_known_exp = 10; //number of known experiments
+int num_known_exp = 11; //number of known experiments
 string exp_names[] = {
   "tigress",
   "emma",
@@ -17,6 +17,7 @@ string exp_names[] = {
   "emmatip",
   "tipjune2021",
   "emmasep2021",
+  "sharcnov2021",
 };
 string exp_description[] = {
   "TIGRESS 16 Clover Configuration",
@@ -29,6 +30,7 @@ string exp_description[] = {
   "TIGRESS 12 Clovers + TIP + EMMA Focal Plane",
   "June 2021 - 13 TIGRESS + 3 GRIFFIN + TIP",
   "Sep 2021 - TIGRESS 12 Clovers + S3 + SSB + EMMA Focal Plane",
+  "Nov 2021 - TIGRESS 12 Clovers + SHARC (19 FMC32s)",
 };
 
 int search_array(string array[], string search, int len) {
@@ -202,6 +204,17 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
     chancounter = makeEMMAMisc(chancounter, outfile, MSC);
     break;
+    
+  case 10:
+
+    printf("Nov 2021 - TIGRESS 12 Clovers + SHARC (19 FMC32s)\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    zerogains(sharcgains, sharcoffsets, (sizeof(sharcgains)/sizeof(sharcgains[0])));
+    chancounter = makeSHARC(chancounter, 2, 12, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    break;
 
   default:
     printf("Experiment not recognised\nKnown Experiments are:\n");
@@ -212,20 +225,6 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
   if (strcmp(MSC, "NULL") != 0) {
     ofstream mscnames;
     mscnames.open(MSC,ios::app);
-    sprintf(line, "trunc \"/DAQ/MSC/MSC\" '%i'", chancounter);
-    mscnames << line << "\n";
-    sprintf(line, "trunc \"/DAQ/MSC/chan\" '%i'", chancounter);
-    mscnames << line << "\n";
-    sprintf(line, "trunc \"/DAQ/MSC/datatype\" '%i'", chancounter);
-    mscnames << line << "\n";
-    sprintf(line, "trunc \"/DAQ/MSC/gain\" '%i'", chancounter);
-    mscnames << line << "\n";
-    sprintf(line, "trunc \"/DAQ/MSC/offset\" '%i'", chancounter);
-    mscnames << line << "\n";
-    sprintf(line, "trunc \"/DAQ/MSC/quadratic\" '%i'", chancounter);
-    mscnames << line << "\n";
-    sprintf(line, "trunc \"/DAQ/MSC/digitizer\" '%i'", chancounter);
-    mscnames << line << "\n";
 
     sprintf(line, "trunc \"/DAQ/PSC/PSC\" '%i'", chancounter);
     mscnames << line << "\n";

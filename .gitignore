@@ -9,4 +9,6 @@ Alphacal
 EffCheck
 *.txt
 *.cal
+*.root
+*.dat
 *tmpdatafile*

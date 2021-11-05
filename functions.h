@@ -10,8 +10,22 @@ void zerogains(float gain[], float offset[], int len);
 void zerogains(float gain[], float offset[], float non_lin[], int len);
 
 /* TIGRESS CABLING MAP */
-const int tigCollector[16]    = {0,1,2,2,3,0,3,1,3,2,3,2,0,1,1,0}; //map of TIGRESS position to collector
-const int tigCollectorPos[16] = {2,3,0,2,0,0,1,2,2,1,3,3,1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
+const int tigCollector[16]    = {3,3,3,3,0,0,1,1,2,2,2,2,0,1,1,0}; //map of TIGRESS position to collector
+const int tigCollectorPos[16] = {0,1,2,3,2,0,3,2,0,1,3,2,1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
+
+
+/* SHARC CABLING MAP */
+/* Each entry represents a bank of 8 SHARC channels */
+#define SHARC_NUM_BANKS 80
+//position, 1-16 (-1 for empty channels)
+//positions 1-4 and 13-16 are quads, others are boxes
+const int sharcPos[SHARC_NUM_BANKS]     = {5,5,5,5, 5,5,5,5, 5,6,6,6, 6,6,6,6, 6,6,7,7, 7,7,7,7, 7,7,7,8, 8,8,8,8, 8,8,8,8, 10,10,10,10, 10,10,10,10, 10,11,11,11, 11,11,11,11, 11,11,-2,-1, 13,13,13,13, 13,14,14,14, 14,14,15,15, 15,15,15,16, 16,16,16,16, -1,-1,-1,-1};
+//0=D (closest to target), 1=E, 2=F (furthest from target)
+const int sharcDist[SHARC_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+//polarity, 0=N, 1=P
+const bool sharcIsN[SHARC_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,0,0, 0,0,1,1, 1,1,0,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,0,0};
+//channel number at start of bank
+const int sharcStartCh[SHARC_NUM_BANKS] = {0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,8, 16,40,24,32, 0,8,16,16, 0,8,16,40, 24,32,0,8, 0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,0, 0,8,0,8, 16,16,0,8, 0,8,0,8, 0,8,16,16, 0,8,0,8, 0,0,0,0};
 
 void write_to_msc(const char * msc, int chancounter, char electronicaddress[], char var[], int DetType, const char *digitizer) {
   char line[128];
@@ -20,21 +34,6 @@ void write_to_msc(const char * msc, int chancounter, char electronicaddress[], c
     mscnames.open(msc);
   }
   else mscnames.open(msc,ios::app);
-
-  sprintf(line, "set \"/DAQ/MSC/MSC[%i]\" '%s'", chancounter, electronicaddress);
-  mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/MSC/chan[%i]\" '%s'", chancounter, var);
-  mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/MSC/datatype[%i]\" '%i'", chancounter, DetType);
-  mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/MSC/gain[%i]\" '1'", chancounter);
-  mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/MSC/offset[%i]\" '0'", chancounter);
-  mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/MSC/quadratic[%i]\" '0'", chancounter);
-  mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/MSC/digitizer[%i]\" '%s'", chancounter, digitizer);
-  mscnames << line << "\n";
 
   sprintf(line, "set \"/DAQ/PSC/PSC[%i]\" '%s'", chancounter, electronicaddress);
   mscnames << line << "\n";
@@ -656,6 +655,150 @@ int makeTIPEMMA(int chancounter, const char *inp, const char *mscout, float csig
       write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
     }
     chancounter++;
+  }
+  return chancounter;
+}
+
+// SHARC cabled into FMC32s, assuming FMC32s on each port starting at the specified startcollector and startport (and using the later collectors
+// if neccessary)
+int makeSHARC(int chancounter, const int startcollector, const int startport, const char *inp, const char *mscout, const float sharcgains[], const float sharcoffsets[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+  cout << "Making SHARC."<< endl; 
+  char line[128];
+  char var[64];
+  char electronicaddress[32];
+  int DetType;
+  ofstream outfile;
+  if(chancounter == 0) {
+    outfile.open(inp);
+  }
+  else outfile.open(inp,ios::app);
+  
+  int collector = startcollector;
+  int collectorstartport = startport;
+  int collectorstartch = 0;
+
+  for (int i = 0; i < 640; i++) { //20 FMC32s
+
+    int bank = i/8; //the 'bank of 8' that this channel is mapped to
+    if(bank >= SHARC_NUM_BANKS){
+      printf("ERROR: too many SHARC channels!\n");
+      exit(0);
+    }
+    int bankCh = i % 8; //the channel number within the bank of 8
+    
+    int port = collectorstartport + collectorstartch/32;
+    int channel = 16 + (collectorstartch % 32);
+
+    //roll over to the next collector if neccesary
+    if(port>15){
+      collector++;
+      port=0;
+      channel=16;
+      collectorstartport=0;
+      collectorstartch=0;
+    }
+    
+    sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
+    if(sharcIsN[bank]){
+      DetType = 6;
+    }else{
+      DetType = 7;
+    }
+    if(sharcPos[bank]>4 && sharcPos[bank]<13){
+      if(sharcIsN[bank]){
+        switch(sharcDist[bank]){
+          case 0:
+          default:
+            sprintf(var,"SHB%02iDN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+          case 1:
+            sprintf(var,"SHB%02iEN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+          case 2:
+            sprintf(var,"SHB%02iFN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+        }
+      }else{
+        switch(sharcDist[bank]){
+          case 0:
+          default:
+            sprintf(var,"SHB%02iDP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+          case 1:
+            sprintf(var,"SHB%02iEP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+          case 2:
+            sprintf(var,"SHB%02iFP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+        }
+      }
+    }else if(sharcPos[bank]>0){
+      if(sharcIsN[bank]){
+        switch(sharcDist[bank]){
+          case 0:
+          default:
+            sprintf(var,"SHQ%02iDN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+          case 1:
+            sprintf(var,"SHQ%02iEN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+          case 2:
+            sprintf(var,"SHQ%02iFN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+        }
+      }else{
+        switch(sharcDist[bank]){
+          case 0:
+          default:
+            sprintf(var,"SHQ%02iDP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+          case 1:
+            sprintf(var,"SHQ%02iEP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+          case 2:
+            sprintf(var,"SHQ%02iFP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            break;
+        }
+      }
+    }else if(sharcPos[bank]==-2){
+      if(bankCh == 4){
+        i += 12;
+        collectorstartch += 12;
+        continue;
+      }else{
+        switch(bankCh){
+          default:
+          case 0:
+            sprintf(var,"SHB05EN00X");
+            break;
+          case 1:
+            sprintf(var,"SHB06EN00X");
+            break;
+          case 2:
+            sprintf(var,"SHB07EN00X");
+            break;
+          case 3:
+            sprintf(var,"SHB08EN00X");
+            break;
+        }
+      }
+    }else{
+      collectorstartch++;
+      continue;
+    }
+    
+    
+    for(int m = 0; m < MNEMONIC.size(); m++) {
+      if(strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
+        sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
+      }
+    }
+    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << sharcgains[i] << "\t" << sharcoffsets[i] << "\t" << 0 << "\tGRF16\n";
+    if(strcmp(mscout, "NULL") != 0) {
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+    }
+    chancounter++;
+    collectorstartch++;
   }
   return chancounter;
 }

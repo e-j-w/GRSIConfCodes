@@ -166,11 +166,11 @@ bool CreateCustomChannel(const char * opt, const char * experiment, const char *
       for (int iii = 0; iii < MNEMONIC.size(); iii++) {
         tempmnemonic = MNEMONIC.at(iii);
         if (tempmnemonic.compare(var) == 0) {
-          sprintf(line, "set \"/DAQ/MSC/gain[%i]\" '%f'", iii, gain[i]);
+          sprintf(line, "set \"/DAQ/PSC/gain[%i]\" '%f'", iii, gain[i]);
           outfile << line << "\n";
-          sprintf(line, "set \"/DAQ/MSC/offset[%i]\" '%f'", iii, offset[i]);
+          sprintf(line, "set \"/DAQ/PSC/offset[%i]\" '%f'", iii, offset[i]);
           outfile << line << "\n";
-          sprintf(line, "set \"/DAQ/MSC/quadratic[%i]\" '%e'", iii, non_lin[i]);
+          sprintf(line, "set \"/DAQ/PSC/quadratic[%i]\" '%e'", iii, non_lin[i]);
           outfile << line << "\n";
         }
       }
