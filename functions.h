@@ -16,16 +16,16 @@ const int tigCollectorPos[16] = {0,1,2,3,2,0,3,2,0,1,3,2,1,1,0,3}; //map of TIGR
 
 /* SHARC CABLING MAP */
 /* Each entry represents a bank of 8 SHARC channels */
-#define SHARC_NUM_BANKS 80
+#define SHARC_NUM_BANKS 88
 //position, 1-16 (-1 for empty channels)
 //positions 1-4 and 13-16 are quads, others are boxes
-const int sharcPos[SHARC_NUM_BANKS]     = {5,5,5,5, 5,5,5,5, 5,6,6,6, 6,6,6,6, 6,6,7,7, 7,7,7,7, 7,7,7,8, 8,8,8,8, 8,8,8,8, 10,10,10,10, 10,10,10,10, 10,11,11,11, 11,11,11,11, 11,11,-2,-1, 13,13,13,13, 13,14,14,14, 14,14,15,15, 15,15,15,16, 16,16,16,16, -1,-1,-1,-1};
+const int sharcPos[SHARC_NUM_BANKS]     = {5,5,5,5, 5,5,5,5, 5,6,6,6, 6,6,6,6, 6,6,7,7, 7,7,7,7, 7,7,7,8, 8,8,8,8, 8,8,8,8, 10,10,10,10, 10,10,10,10, 10,11,11,11, 11,11,11,11, 11,11,-2,-1, 13,13,13,13, 13,14,14,14, 14,14,15,15, 15,15,15,16, 16,16,16,16, 12,12,12,-1, 12,12,12,12, 12,12,-1,-1};
 //0=D (closest to target), 1=E, 2=F (furthest from target)
-const int sharcDist[SHARC_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+const int sharcDist[SHARC_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
 //polarity, 0=N, 1=P
-const bool sharcIsN[SHARC_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,0,0, 0,0,1,1, 1,1,0,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,0,0};
+const bool sharcIsN[SHARC_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,0,0, 0,0,1,1, 1,1,0,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,0,0, 1,1,1,1, 1,1,0,0};
 //channel number at start of bank
-const int sharcStartCh[SHARC_NUM_BANKS] = {0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,8, 16,40,24,32, 0,8,16,16, 0,8,16,40, 24,32,0,8, 0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,0, 0,8,0,8, 16,16,0,8, 0,8,0,8, 0,8,16,16, 0,8,0,8, 0,0,0,0};
+const int sharcStartCh[SHARC_NUM_BANKS] = {0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,8, 16,40,24,32, 0,8,16,16, 0,8,16,40, 24,32,0,8, 0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,0, 0,8,0,8, 16,16,0,8, 0,8,0,8, 0,8,16,16, 0,8,0,8, 0,8,16,0, 0,8,16,40, 24,32,0,0};
 
 void write_to_msc(const char * msc, int chancounter, char electronicaddress[], char var[], int DetType, const char *digitizer) {
   char line[128];
@@ -677,7 +677,7 @@ int makeSHARC(int chancounter, const int startcollector, const int startport, co
   int collectorstartport = startport;
   int collectorstartch = 0;
 
-  for (int i = 0; i < 640; i++) { //20 FMC32s
+  for (int i = 0; i < 704; i++) { //20 FMC32s
 
     int bank = i/8; //the 'bank of 8' that this channel is mapped to
     if(bank >= SHARC_NUM_BANKS){
@@ -762,7 +762,7 @@ int makeSHARC(int chancounter, const int startcollector, const int startport, co
       }
     }else if(sharcPos[bank]==-2){
       if(bankCh == 4){
-        i += 12;
+        i += 11;
         collectorstartch += 12;
         continue;
       }else{
