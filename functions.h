@@ -803,6 +803,77 @@ int makeSHARC(int chancounter, const int startcollector, const int startport, co
   return chancounter;
 }
 
+int makeTRIFIC(int chancounter, const int startcollector, const int startport, const char *inp, const char *mscout, float trificgains[], float trificoffsets[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+  cout << "Making TRIFIC."<< endl; 
+  char line[128];
+  char var[64];
+  char electronicaddress[32];
+  ofstream outfile;
+  if(chancounter == 0) {
+    outfile.open(inp);
+  }
+  else outfile.open(inp,ios::app);
+
+  int collector = startcollector;
+  int collectorstartport = startport;
+  int collectorstartch = 0;
+
+  for (int i = 0; i < 64; i++) {
+
+    int port = collectorstartport + collectorstartch/16;
+    int channel = collectorstartch % 16;
+
+    //roll over to the next collector if neccesary
+    if(port>15){
+      collector++;
+      port=0;
+      channel=0;
+      collectorstartport=0;
+      collectorstartch=0;
+    }
+
+    int DetType = 10;
+    switch(i/16){
+      case 3:
+        sprintf(var,"TFC03YN%02iX",channel);
+        DetType = 11;
+        break;
+      case 2:
+        sprintf(var,"TFC05XN%02iX",channel);
+        DetType = 11;
+        break;
+      case 1:
+        sprintf(var,"TFC%02iSN00X",(channel*2)+1);
+        DetType = 11;
+        break;
+      case 0:
+        sprintf(var,"TFC%02iSP00X",(channel+1)*2);
+        DetType = 10;
+        break;
+      default:
+        cout << "Unknown TRIFIC channel: " << i << endl;
+        chancounter++;
+        collectorstartch++;
+        continue;
+    }
+
+    sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
+    for(int m = 0; m < MNEMONIC.size(); m++) {
+      if (strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
+        sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
+      }
+    }
+    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << trificgains[i] << "\t" << trificoffsets[i] << "\t" << 0 << "\tGRF16\n";
+    if(strcmp(mscout, "NULL") != 0) {
+      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
+    }
+    chancounter++;
+    collectorstartch++;
+  }
+  return chancounter;
+}
+
+
 int makeDESCANT(int chancounter, const char *inp, const char *mscout, std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel) {
   char line[128];
   char var[64];

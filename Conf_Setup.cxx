@@ -213,6 +213,8 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
     zerogains(sharcgains, sharcoffsets, (sizeof(sharcgains)/sizeof(sharcgains[0])));
     chancounter = makeSHARC(chancounter, 2, 12, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
+    zerogains(trificgains, trificoffsets, (sizeof(trificgains)/sizeof(trificgains[0])));
+    chancounter = makeTRIFIC(chancounter, 3, 0, outfile, MSC, trificgains, trificoffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
     break;
 

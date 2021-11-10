@@ -86,5 +86,8 @@ float sharcoffsets[960];
 float csigains[16];
 float csioffsets[16];
 
+float trificgains[64];
+float trificoffsets[64];
+
 float seggains[512]; 
 float segoffsets[512];
