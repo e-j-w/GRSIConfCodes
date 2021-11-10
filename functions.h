@@ -865,7 +865,7 @@ int makeTRIFIC(int chancounter, const int startcollector, const int startport, c
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << trificgains[i] << "\t" << trificoffsets[i] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
     }
     chancounter++;
     collectorstartch++;
