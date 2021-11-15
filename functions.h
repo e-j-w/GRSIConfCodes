@@ -16,16 +16,44 @@ const int tigCollectorPos[16] = {0,1,2,3,2,0,3,2,0,1,3,2,1,1,0,3}; //map of TIGR
 
 /* SHARC CABLING MAP */
 /* Each entry represents a bank of 8 SHARC channels */
-#define SHARC_NUM_BANKS 88
+#define SHARC_NUM_BANKS 96
 //position, 1-16 (-1 for empty channels)
 //positions 1-4 and 13-16 are quads, others are boxes
-const int sharcPos[SHARC_NUM_BANKS]     = {5,5,5,5, 5,5,5,5, 5,6,6,6, 6,6,6,6, 6,6,7,7, 7,7,7,7, 7,7,7,8, 8,8,8,8, 8,8,8,8, 10,10,10,10, 10,10,10,10, 10,11,11,11, 11,11,11,11, 11,11,-2,-1, 13,13,13,13, 13,14,14,14, 14,14,15,15, 15,15,15,16, 16,16,16,16, 12,12,12,-1, 12,12,12,12, 12,12,-1,-1};
+const int sharcPos[SHARC_NUM_BANKS]     = {5,5,5,5, 5,5,5,5, 5,6,6,6, 6,6,6,6, 6,6,7,7, 7,7,7,7, 7,7,7,8, 8,8,8,8, 8,8,8,8, 10,10,10,10, 10,10,10,10, 10,11,11,11, 11,11,11,11, 11,11,-2,-2, 13,13,13,13, 13,14,-1,-1, 14,14,15,15, 15,15,15,16, 16,16,16,16, 12,12,12,9, 12,12,12,12, 12,12,9,9, 9,9,9,9, 9,9,14,14};
 //0=D (closest to target), 1=E, 2=F (furthest from target)
-const int sharcDist[SHARC_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
-//polarity, 0=N, 1=P
-const bool sharcIsN[SHARC_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,0,0, 0,0,1,1, 1,1,0,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,0,0, 1,1,1,1, 1,1,0,0};
+const int sharcDist[SHARC_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+//polarity, 0=P, 1=N
+const bool sharcIsN[SHARC_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,0,0, 0,0,1,1, 1,1,0,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,0,0, 1,1,1,1, 1,1,1,1, 1,1,1,1, 0,0,0,0};
 //channel number at start of bank
-const int sharcStartCh[SHARC_NUM_BANKS] = {0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,8, 16,40,24,32, 0,8,16,16, 0,8,16,40, 24,32,0,8, 0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,0, 0,8,0,8, 16,16,0,8, 0,8,0,8, 0,8,16,16, 0,8,0,8, 0,8,16,0, 0,8,16,40, 24,32,0,0};
+const int sharcStartCh[SHARC_NUM_BANKS] = {0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,8, 16,40,24,32, 0,8,16,16, 0,8,16,40, 24,32,0,8, 0,8,16,40, 24,32,0,8, 16,16,0,8, 16,40,24,32, 0,8,0,8, 0,8,0,8, 16,16,0,8, 0,8,0,8, 0,8,16,16, 0,8,0,8, 0,8,16,16, 0,8,16,40, 24,32,0,8, 16,40,24,32, 0,8,0,8};
+
+//ATSD adapter remapping arrays. This is how they need to be mapped:
+/*
+FMC chan | Preamp chan
+1 		 | 1
+2		 | 3
+3 		 | 5
+4 		 | 7
+5 		 | 9
+6 		 | 11
+7 		 | 13
+8 		 | 15
+9 		 | 2
+10 		 | 4
+11 		 | 6
+12		 | 8
+13 		 | 10
+14 		 | 12
+15 		 | 14
+16 		 | 16
+*/
+
+//we only need to remap those blocks that start at 0 and 24 since those correspond to the blocks of channels coming out of the first 16 channels on the adapter, which are the ones messed up
+//the other channels (16-23 and 40-47) are jumpered, and the jumper mapping appears correct
+const int FMCRemapSeg0[8] = {0,2,4,6,8,10,12,14};
+const int FMCRemapSeg8[8] = {1,3,5,7,9,11,13,15}; //offset from above by 1 because we index at 0 on the detectors
+const int FMCRemapSeg24[8] = {24,26,28,30,32,34,36,38};
+const int FMCRemapSeg32[8] = {25,27,29,31,33,35,37,39}; //same as above, but just add 24 to every channel to remap 24-39. 
 
 void write_to_msc(const char * msc, int chancounter, char electronicaddress[], char var[], int DetType, const char *digitizer) {
   char line[128];
@@ -677,7 +705,7 @@ int makeSHARC(int chancounter, const int startcollector, const int startport, co
   int collectorstartport = startport;
   int collectorstartch = 0;
 
-  for (int i = 0; i < 704; i++) { //20 FMC32s
+  for (int i = 0; i < 768; i++) { //24 FMC32s
 
     int bank = i/8; //the 'bank of 8' that this channel is mapped to
     if(bank >= SHARC_NUM_BANKS){
@@ -688,6 +716,25 @@ int makeSHARC(int chancounter, const int startcollector, const int startport, co
     
     int port = collectorstartport + collectorstartch/32;
     int channel = 16 + (collectorstartch % 32);
+    
+    //this will adjust the segment mapping to follow funky mapping of the first 16 channels on the ATSD to Samtec adapters
+    int adjustedSegment = sharcStartCh[bank]+bankCh; //the existing mapping
+    //this if statement should only trigger on the banks that need remapping
+    if (0 == sharcStartCh[bank]){ //mappings need to be translated from FMC to preamp: FMC 1 -> segment 0, FMC 2 -> seg 3, FMC 3 -> seg 5,..., FMC 9 -> seg2, FMC 10 -> seg4,..., FMC 16->seg 16
+    	adjustedSegment = FMCRemapSeg0[bankCh]; //this should remap the segments 0-15 correctly into the FMC now
+    }
+    else if (8 == sharcStartCh[bank]){
+    	adjustedSegment = FMCRemapSeg8[bankCh]; //this should remap the segments 24-39 correctly into the FMC now
+    }
+    else if (24 == sharcStartCh[bank]){
+    	adjustedSegment = FMCRemapSeg24[bankCh]; //this should remap the segments 24-39 correctly into the FMC now
+    }
+    else if (32 == sharcStartCh[bank]){
+    	adjustedSegment = FMCRemapSeg32[bankCh]; //this should remap the segments 24-39 correctly into the FMC now
+    }
+    
+    //from now on, adjustedSegment should be correct for every channel regardless of it is mapped weirdly by the ATSD preamp or not.
+    //I will now replace sharcStartCh[bank]+bankCh with adjustedSegment
 
     //roll over to the next collector if neccesary
     if(port>15){
@@ -709,26 +756,26 @@ int makeSHARC(int chancounter, const int startcollector, const int startport, co
         switch(sharcDist[bank]){
           case 0:
           default:
-            sprintf(var,"SHB%02iDN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHB%02iDN%02iX",sharcPos[bank],adjustedSegment);
             break;
           case 1:
-            sprintf(var,"SHB%02iEN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHB%02iEN%02iX",sharcPos[bank],adjustedSegment);
             break;
           case 2:
-            sprintf(var,"SHB%02iFN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHB%02iFN%02iX",sharcPos[bank],adjustedSegment);
             break;
         }
       }else{
         switch(sharcDist[bank]){
           case 0:
           default:
-            sprintf(var,"SHB%02iDP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHB%02iDP%02iX",sharcPos[bank],adjustedSegment);
             break;
           case 1:
-            sprintf(var,"SHB%02iEP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHB%02iEP%02iX",sharcPos[bank],adjustedSegment);
             break;
           case 2:
-            sprintf(var,"SHB%02iFP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHB%02iFP%02iX",sharcPos[bank],adjustedSegment);
             break;
         }
       }
@@ -737,56 +784,60 @@ int makeSHARC(int chancounter, const int startcollector, const int startport, co
         switch(sharcDist[bank]){
           case 0:
           default:
-            sprintf(var,"SHQ%02iDN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHQ%02iDN%02iX",sharcPos[bank],adjustedSegment);
             break;
           case 1:
-            sprintf(var,"SHQ%02iEN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHQ%02iEN%02iX",sharcPos[bank],adjustedSegment);
             break;
           case 2:
-            sprintf(var,"SHQ%02iFN%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHQ%02iFN%02iX",sharcPos[bank],adjustedSegment);
             break;
         }
       }else{
         switch(sharcDist[bank]){
           case 0:
           default:
-            sprintf(var,"SHQ%02iDP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHQ%02iDP%02iX",sharcPos[bank],adjustedSegment);
             break;
           case 1:
-            sprintf(var,"SHQ%02iEP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHQ%02iEP%02iX",sharcPos[bank],adjustedSegment);
             break;
           case 2:
-            sprintf(var,"SHQ%02iFP%02iX",sharcPos[bank],sharcStartCh[bank]+bankCh);
+            sprintf(var,"SHQ%02iFP%02iX",sharcPos[bank],adjustedSegment);
             break;
         }
       }
     }else if(sharcPos[bank]==-2){
-      if(bankCh == 4){
-        i += 11;
-        collectorstartch += 12;
+    	sprintf(var,"SHB%02iEP00X",adjustedSegment);
+      /*if(bankCh == 2){
+        i += 3;
+        collectorstartch += 4;
         continue;
       }else{
         switch(bankCh){
-          default:
-          case 0:
+          	continue;
+          case 7:
+          	std::cout << "\ncase 7: bank chan is " << bankCh;
             sprintf(var,"SHB05EN00X");
             break;
-          case 1:
+          case 6:
+          	std::cout << "\ncase 6: bank chan is " << bankCh;
             sprintf(var,"SHB06EN00X");
             break;
-          case 2:
+          case 1:
+          	std::cout << "\ncase 1: bank chan is " << bankCh;
             sprintf(var,"SHB07EN00X");
             break;
-          case 3:
+          case 0:
+          	std::cout << "\ncase 0: bank chan is " << bankCh;
             sprintf(var,"SHB08EN00X");
             break;
         }
-      }
+      }*/
     }else{
       collectorstartch++;
       continue;
     }
-    
     
     for(int m = 0; m < MNEMONIC.size(); m++) {
       if(strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
@@ -799,6 +850,7 @@ int makeSHARC(int chancounter, const int startcollector, const int startport, co
     }
     chancounter++;
     collectorstartch++;
+    
   }
   return chancounter;
 }
