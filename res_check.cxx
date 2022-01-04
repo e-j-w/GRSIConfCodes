@@ -175,7 +175,10 @@ int main(int argc, char ** argv) {
 
   // Input-chain-file, output-histogram-file
   if (argc == 1) {
-	  cout << "Insufficient arguments, provide argument tree files" << endl;
+	  cout << "Insufficient arguments." << endl;
+    cout << "./ResCheck analysis_tree cal_file out_file" << endl;
+    cout << "Default cal_file: LabCalFile.cal" << endl;
+    cout << "Default out_file: Efficiency.root" << endl;
 	  return 0;
   } else if (argc == 2) {
 	  afile = argv[1];

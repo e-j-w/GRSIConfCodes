@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int num_known_exp = 11; //number of known experiments
+int num_known_exp = 12; //number of known experiments
 string exp_names[] = {
   "tigress",
   "emma",
@@ -18,6 +18,7 @@ string exp_names[] = {
   "tipjune2021",
   "emmasep2021",
   "sharcnov2021",
+  "emmanov2021",
 };
 string exp_description[] = {
   "TIGRESS 16 Clover Configuration",
@@ -31,6 +32,7 @@ string exp_description[] = {
   "June 2021 - 13 TIGRESS + 3 GRIFFIN + TIP",
   "Sep 2021 - TIGRESS 12 Clovers + S3 + SSB + EMMA Focal Plane",
   "Nov 2021 - TIGRESS 12 Clovers + SHARC (19 FMC32s)",
+  "Nov 2021 - TIGRESS 12 Clovers + SSB + EMMA Focal Plane",
 };
 
 int search_array(string array[], string search, int len) {
@@ -216,6 +218,16 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     zerogains(trificgains, trificoffsets, (sizeof(trificgains)/sizeof(trificgains[0])));
     chancounter = makeTRIFIC(chancounter, 3, 0, outfile, MSC, trificgains, trificoffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    break;
+
+  case 11:
+
+    printf("Nov 2021 - TIGRESS 12 Clovers + SSB + EMMA Focal Plane\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    chancounter = makeEMMAMisc(chancounter, outfile, MSC);
     break;
 
   default:
