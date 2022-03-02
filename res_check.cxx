@@ -116,6 +116,8 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
   }
 
   float avgRes = 0.0f;
+  float minRes = 100000.0f;
+  float maxRes = 0.0f;
   float res[64];
   int numCry = 0;
 
@@ -142,16 +144,16 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
       earray[p][pp] = gp[p][pp]->GetParError(1);
       if(p==1){ //1332 keV peak
         res[pp] = (gp[p][pp]->GetParameter(2)/gp[p][pp]->GetParameter(1))*calib_en[p]*2.35482;
-        if(tig){
-          ofile << pp << ",\t" << gp[p][pp]->GetParameter(1) << ",\t" << gp[p][pp]->GetParameter(2) << ",\t" << res[pp] << endl;
-          if(res[pp] >= 3.0) printf( DRED "ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n" RESET_COLOR "",pp, gp[p][pp]->GetParameter(1),res[pp]);  
-          else printf("ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n",pp, gp[p][pp]->GetParameter(1),res[pp]);  
-        }else{
-          ofile << pp + 1 << ",\t" << gp[p][pp]->GetParameter(1) << ",\t" << gp[p][pp]->GetParameter(2) << ",\t" << res[pp] << endl;
-          if(res[pp] >= 3.0) printf( DRED "ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n" RESET_COLOR "",pp + 1, gp[p][pp]->GetParameter(1),res[pp]);  
-          else printf("ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n",pp + 1, gp[p][pp]->GetParameter(1),res[pp]);  
-        }
+        ofile << pp + 1 << ",\t" << gp[p][pp]->GetParameter(1) << ",\t" << gp[p][pp]->GetParameter(2) << ",\t" << res[pp] << endl;
+        if(res[pp] >= 3.0) printf( DRED "ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n" RESET_COLOR "",pp + 1, gp[p][pp]->GetParameter(1),res[pp]);  
+        else printf("ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n",pp + 1, gp[p][pp]->GetParameter(1),res[pp]);
         avgRes += res[pp];
+        if(res[pp] < minRes){
+          minRes = res[pp];
+        }
+        if(res[pp] > maxRes){
+          maxRes = res[pp];
+        }
         numCry++;
       }       
     }      
@@ -172,6 +174,12 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
   if(stdevRes >= 1.0) printf( DRED "   Standard Deviation:\t%f keV\t\n" RESET_COLOR "",stdevRes);  
   else printf("   Standard Deviation:\t\t%f keV\t\n",stdevRes);
   
+  if(minRes >= 2.5) printf( DRED "Minimum (Worst) Resolution (FWHM):\t%f keV\t\n" RESET_COLOR "",maxRes);  
+  else printf("Minimum (Best) Resolution (FWHM):\t%f keV\t\n",minRes);
+
+  if(maxRes >= 3.2) printf( DRED "Maximum (Worst) Resolution (FWHM):\t%f keV\t\n" RESET_COLOR "",maxRes);  
+  else printf("Maximum (Best) Resolution (FWHM):\t%f keV\t\n",maxRes);
+
   cout << "Writing histograms to " << outfile << endl;
   TFile * myfile = new TFile(outfile, "RECREATE");
   myfile->cd();
