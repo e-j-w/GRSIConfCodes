@@ -115,7 +115,12 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
     return;
   }
 
-  for (int pp = 0; pp < 65; pp++) {
+  float avgRes = 0.0f;
+  float res[64];
+  int numCry = 0;
+
+  for(int pp = 0; pp < 65; pp++){
+    res[pp] = -1.0f;
     if (gamma_singles[pp]->Integral(0, nBins) < 400) continue;
     gamma_singles[pp]->GetXaxis()->SetRange(20, nBins);
     TSpectrum * s = new TSpectrum(2 * npeaks);
@@ -135,21 +140,37 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
       gamma_singles[pp]->Fit(gp[p][pp], "QR+");
       array[p][pp] = gp[p][pp]->GetParameter(1);
       earray[p][pp] = gp[p][pp]->GetParError(1);
-      float resolution = (gp[p][pp]->GetParameter(2)/gp[p][pp]->GetParameter(1))*calib_en[p];
-      if(p==1) {
-        if(tig) {
-	  ofile << pp << ",\t" << gp[p][pp]->GetParameter(1) << ",\t" << gp[p][pp]->GetParameter(2) << ",\t" << resolution << endl;
-	  if(resolution > 1.3) printf( DRED "ArrayNumber:\t%i\tCentroid:\t%f\tResolution keV:\t%f\t\n" RESET_COLOR "",pp, gp[p][pp]->GetParameter(1),resolution);  
-	  else printf("ArrayNumber:\t%i\tCentroid:\t%f\tResolution keV:\t%f\t\n",pp, gp[p][pp]->GetParameter(1),resolution);  
-	}
-	else {
-	  ofile << pp + 1 << ",\t" << gp[p][pp]->GetParameter(1) << ",\t" << gp[p][pp]->GetParameter(2) << ",\t" << resolution << endl;
-	  if(resolution > 1.3) printf( DRED "ArrayNumber:\t%i\tCentroid:\t%f\tResolution keV:\t%f\t\n" RESET_COLOR "",pp + 1, gp[p][pp]->GetParameter(1),resolution);  
-	  else printf("ArrayNumber:\t%i\tCentroid:\t%f\tResolution keV:\t%f\t\n",pp + 1, gp[p][pp]->GetParameter(1),resolution);  
-	}
+      if(p==1){ //1332 keV peak
+        res[pp] = (gp[p][pp]->GetParameter(2)/gp[p][pp]->GetParameter(1))*calib_en[p]*2.35482;
+        if(tig){
+          ofile << pp << ",\t" << gp[p][pp]->GetParameter(1) << ",\t" << gp[p][pp]->GetParameter(2) << ",\t" << res[pp] << endl;
+          if(res[pp] >= 3.0) printf( DRED "ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n" RESET_COLOR "",pp, gp[p][pp]->GetParameter(1),res[pp]);  
+          else printf("ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n",pp, gp[p][pp]->GetParameter(1),res[pp]);  
+        }else{
+          ofile << pp + 1 << ",\t" << gp[p][pp]->GetParameter(1) << ",\t" << gp[p][pp]->GetParameter(2) << ",\t" << res[pp] << endl;
+          if(res[pp] >= 3.0) printf( DRED "ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n" RESET_COLOR "",pp + 1, gp[p][pp]->GetParameter(1),res[pp]);  
+          else printf("ArrayNumber:\t%i\tCentroid:\t%f\tResolution (FWHM):\t%f keV\t\n",pp + 1, gp[p][pp]->GetParameter(1),res[pp]);  
+        }
+        avgRes += res[pp];
+        numCry++;
       }       
     }      
   }
+
+  avgRes /= numCry*1.0f;
+  float stdevRes = 0.0f;
+  for(int pp = 0; pp < 65; pp++){
+    if(res[pp] >= 0.0f){
+      stdevRes += (res[pp] - avgRes)*(res[pp] - avgRes);
+    }
+  }
+  stdevRes = sqrtf(stdevRes/(numCry + 1.0f));
+
+  if(avgRes >= 2.8) printf( DRED "Average Resolution (FWHM):\t%f keV\t\n" RESET_COLOR "",avgRes);  
+  else printf("Average Resolution (FWHM):\t%f keV\t\n",avgRes);
+
+  if(stdevRes >= 1.0) printf( DRED "   Standard Deviation:\t%f keV\t\n" RESET_COLOR "",stdevRes);  
+  else printf("   Standard Deviation:\t\t%f keV\t\n",stdevRes);
   
   cout << "Writing histograms to " << outfile << endl;
   TFile * myfile = new TFile(outfile, "RECREATE");
@@ -173,7 +194,7 @@ int main(int argc, char ** argv) {
   grsi_path += ".grsirc";
   gEnv->ReadFile(grsi_path.c_str(), kEnvChange);
 
-  // Input-chain-file, output-histogram-file
+  cout << "Resolution check code for in-array 60Co data." << endl;
   if (argc == 1) {
 	  cout << "Insufficient arguments." << endl;
     cout << "./ResCheck analysis_tree cal_file out_file" << endl;

@@ -59,7 +59,7 @@ void eff_check(char const * infile, char const * calfile, char const * outfile) 
     gammacal1crycal_numcry[iii]->GetXaxis()->SetTitle("Single crystal energy (keV)");
   	gammacal1crycal_numcry[iii]->GetYaxis()->SetTitle("Num crystals hit");
     sprintf(hname2, "t%d", iii);
-    gamma_time[iii] = new TH2F(hname2, Form("Gamma Energy vs. Time Crystal %1.1i", iii), 1800, 0, 1800, nBins, minBin, maxBin);
+    gamma_time[iii] = new TH2F(hname2, Form("Gamma Energy vs. Time Crystal %1.1i", iii), 3600, 0, 3600, nBins, minBin, maxBin);
   }
   
   gamma_gamma_time = new TH1F("Gamma Time vs. Gamma Time","Gamma Time vs. Gamma Time", 4096, -4096, 4096);
@@ -89,7 +89,7 @@ void eff_check(char const * infile, char const * calfile, char const * outfile) 
     cout << "No TGenericDetector Branch Found" << endl;
     return;
   }
-
+  
   printf("Begin sort\n");
   for (int jentry = 0; jentry < (nentries - 1); jentry++) {
     tree->GetEntry(jentry);
@@ -106,7 +106,7 @@ void eff_check(char const * infile, char const * calfile, char const * outfile) 
 
     if (jentry % 10000 == 0) cout << setiosflags(ios::fixed) << "Entry " << jentry << " of " << nentries << ", " << 100 * jentry / nentries << "% complete" << "\r" << flush;
   }
-
+  
   for (int iii = 1; iii < NUM_CRY+1; iii++) {
     gamma_singles[iii]->SetBinContent(1, 0);
     if (gamma_singles[iii]->Integral(0, nBins) > 400) {
@@ -221,9 +221,11 @@ void eff_check(char const * infile, char const * calfile, char const * outfile) 
       	gamma_gamma_cal->Fill(gen_hit->GetCharge()*cal_par[gen_hit->GetDetector()][1] + cal_par[gen_hit->GetDetector()][0],gen_hit2->GetCharge()*cal_par[gen_hit->GetDetector()][1] + cal_par[gen_hit->GetDetector()][0]); //symmetrized
       }
     }
-    gamma_singlesallcrycal[gen->GetHit(0)->GetDetector()]->Fill(allCryCharge);
+    if(gen_hit->GetDetector()>=0 && gen_hit->GetDetector()<NUM_CRY+1){
+      gamma_singlesallcrycal[gen->GetHit(0)->GetDetector()]->Fill(allCryCharge);
+    }
     gammacal_numcry->Fill(allCryCharge,gen->GetMultiplicity());
-
+    
     if (jentry % 10000 == 0) cout << setiosflags(ios::fixed) << "Entry " << jentry << " of " << nentries << ", " << 100 * jentry / nentries << "% complete" << "\r" << flush;
   }
 
