@@ -35,8 +35,8 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
   TH1F * gamma_singles[2000];
   char hname[20];
   for (int iii = 0; iii < 65; iii++) {
-    sprintf(hname, "h%d", iii);
-    gamma_singles[iii] = new TH1F(hname, Form("Gamma Singles Crystal %1.1i", iii), nBins, min, max);
+    sprintf(hname, "h%d", iii+1);
+    gamma_singles[iii] = new TH1F(hname, Form("Gamma Singles Crystal %1.1i", iii+1), nBins, min, max);
   } 
   TH2F * gA = new TH2F("gA","",64,0,64,nBins,min,max);list->Add(gA);
 
@@ -178,7 +178,7 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
   else printf("Minimum (Best) Resolution (FWHM):\t%f keV\t\n",minRes);
 
   if(maxRes >= 3.2) printf( DRED "Maximum (Worst) Resolution (FWHM):\t%f keV\t\n" RESET_COLOR "",maxRes);  
-  else printf("Maximum (Best) Resolution (FWHM):\t%f keV\t\n",maxRes);
+  else printf("Maximum (Worst) Resolution (FWHM):\t%f keV\t\n",maxRes);
 
   cout << "Writing histograms to " << outfile << endl;
   TFile * myfile = new TFile(outfile, "RECREATE");

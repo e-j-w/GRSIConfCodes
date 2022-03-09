@@ -10,8 +10,8 @@ void zerogains(float gain[], float offset[], int len);
 void zerogains(float gain[], float offset[], float non_lin[], int len);
 
 /* TIGRESS CABLING MAP */
-const int tigCollector[16]    = {3,3,3,2,0,0,1,1,2,2,2,3,0,1,1,0}; //map of TIGRESS position to collector
-const int tigCollectorPos[16] = {0,1,2,2,2,0,3,2,0,1,3,3,1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
+const int tigCollector[16]    = {3,3,3,3,0,0,1,1,2,2,2,2,0,1,1,0}; //map of TIGRESS position to collector
+const int tigCollectorPos[16] = {0,1,2,3,2,0,3,2,0,1,3,2,1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
 
 
 /* SHARC CABLING MAP */
@@ -118,21 +118,12 @@ int makeTIGRESS(int first, int last, int portOffset, int chancounter, const char
     int DetNum = (i / 64) + first;
     if(DetNum > 16)
       continue;
-    int cryNum = (i % 64) / 16;
+    //int port = (i % 256) / 16;
     int channel = i % 16;
+    //int collector = (i / 256) + first / 5;
     int collector = tigCollector[DetNum-1];
-    int port = 0;
-    if(cryNum == 0){
-      //blue core
-      //this is on one of the GRIF-16s with an FMC32 installed,
-      //which are assigned to the first 4 ports of each collector
-      port = tigCollectorPos[DetNum-1];
-    }else{
-      //green, red, white cores
-      //starting at port 4, cabled as G,R,W,G,R,W,G,R,W,G,R,W
-      port = 4 + (cryNum - 1) + (tigCollectorPos[DetNum-1]*3) + portOffset;
-    }
-    
+    int port = (i % 64) / 16 + (tigCollectorPos[DetNum-1]*4) + portOffset;
+    int cryNum = (port % 4);
     char electronicaddress[32];
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     //cout << "det: " << DetNum << ", address: " << electronicaddress << endl;
@@ -193,19 +184,11 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
   else outfile.open(inp,ios::app);
   int num_clover = last - first + 1;
 
-  for (int i = 0; i < num_clover*32; i++){
-
-    int DetNum = (i / 32) + first;
+  for (int i = 0; i < num_clover*32; i++) {
+    int DetNum = (i / 32) + 1;
     int collector = tigCollector[DetNum-1];
-    int cardNum = (i % 32) / 16;
-    int port = 0;
-    if(cardNum == 0){
-      //this is on one of the GRIF-16s with an FMC32 installed,
-      //which are assigned to the first 4 ports of each collector
-      port = tigCollectorPos[DetNum-1];
-    }else{
-      port = 4 + (cardNum - 1) + (tigCollectorPos[DetNum-1]*3) + portOffset;
-    }
+    //int collector = (i / 256);
+    int port = (i % 32) / 16 + (tigCollectorPos[DetNum-1]*4) + portOffset;
     //int port = (i % 256) / 16;
     int channel = i % 16;
     int ab = port%2;
@@ -704,10 +687,9 @@ int makeTIPEMMA(int chancounter, const char *inp, const char *mscout, float csig
   return chancounter;
 }
 
-// SHARC cabled into an FMC32 on the specified port and collector
-// assumed to contain 4 banks of 8 channels, starting at startBank (should be a 0-indexed value
-// based on the SHARC cabling map at the top of this file)
-int makeSHARC(int chancounter, const int collector, const int port, const int startBank, const char *inp, const char *mscout, const float sharcgains[], const float sharcoffsets[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+// SHARC cabled into FMC32s, assuming FMC32s on each port starting at the specified startcollector and startport (and using the later collectors
+// if neccessary)
+int makeSHARC(int chancounter, const int startcollector, const int startport, const char *inp, const char *mscout, const float sharcgains[], const float sharcoffsets[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
   cout << "Making SHARC."<< endl; 
   char line[128];
   char var[64];
@@ -719,19 +701,20 @@ int makeSHARC(int chancounter, const int collector, const int port, const int st
   }
   else outfile.open(inp,ios::app);
   
+  int collector = startcollector;
+  int collectorstartport = startport;
   int collectorstartch = 0;
 
-  for (int i = 0; i < 32; i++) { //1 FMC32
+  for (int i = 0; i < 768; i++) { //24 FMC32s
 
-    int bank = startBank + (i/8); //the 'bank of 8' that this channel is mapped to
+    int bank = i/8; //the 'bank of 8' that this channel is mapped to
     if(bank >= SHARC_NUM_BANKS){
-      continue;
-    }
-    if(port > 15){
-      printf("WARNING: Invalid SHARC port: %i\n",port);
-      continue;
+      printf("ERROR: too many SHARC channels!\n");
+      exit(0);
     }
     int bankCh = i % 8; //the channel number within the bank of 8
+    
+    int port = collectorstartport + collectorstartch/32;
     int channel = 16 + (collectorstartch % 32);
     
     //this will adjust the segment mapping to follow funky mapping of the first 16 channels on the ATSD to Samtec adapters
@@ -752,6 +735,15 @@ int makeSHARC(int chancounter, const int collector, const int port, const int st
     
     //from now on, adjustedSegment should be correct for every channel regardless of it is mapped weirdly by the ATSD preamp or not.
     //I will now replace sharcStartCh[bank]+bankCh with adjustedSegment
+
+    //roll over to the next collector if neccesary
+    if(port>15){
+      collector++;
+      port=0;
+      channel=16;
+      collectorstartport=0;
+      collectorstartch=0;
+    }
     
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     if(sharcIsN[bank]){
