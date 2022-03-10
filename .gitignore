@@ -4,9 +4,11 @@ CustomChan
 ConstructCalibrationFile
 ChanCheck
 Calibrate
+Calibrate_LaBr
 ResCheck
 Alphacal
 EffCheck
+Efficiency
 *.txt
 *.cal
 *.root
