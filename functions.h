@@ -10,8 +10,8 @@ void zerogains(float gain[], float offset[], int len);
 void zerogains(float gain[], float offset[], float non_lin[], int len);
 
 /* TIGRESS CABLING MAP */
-const int tigCollector[16]    = {3,3,3,2,0,0,1,1,2,2,2,3,0,1,1,0}; //map of TIGRESS position to collector
-const int tigCollectorPos[16] = {0,1,2,2,2,0,3,2,0,1,3,3,1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
+const int tigCollector[16]    = {3,3,3,2,0,0,1,1,2,2,2,2,0,1,1,0}; //map of TIGRESS position to collector
+const int tigCollectorPos[16] = {0,1,2,2,2,0,3,2,0,1,3,2,1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
 
 
 /* SHARC CABLING MAP */
@@ -137,7 +137,7 @@ int makeTIGRESS(int first, int last, int portOffset, int chancounter, const char
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     //cout << "det: " << DetNum << ", address: " << electronicaddress << endl;
     if (channel < 15) {
-      char colour[1];
+      char colour[2];
       if (cryNum == 0) sprintf(colour, "B");
       else if (cryNum == 1) sprintf(colour, "G");
       else if (cryNum == 2) sprintf(colour, "R");
@@ -224,7 +224,7 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
     char electronicaddress[32];
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     if (channel < 15 && channel != 4 ) {
-      char colour[1];
+      char colour[2];
       if (cryNum == 0) sprintf(colour, "B");
       else if (cryNum == 1) sprintf(colour, "G");
       else if (cryNum == 2) sprintf(colour, "R");
@@ -300,7 +300,7 @@ int makeGRIFFIN(int chancounter, const char *inp, const char *mscout, float gain
     char electronicaddress[32];
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     if (channel < 15 && channel != 4 ) {
-      char colour[1];
+      char colour[2];
       if (cryNum == 0) sprintf(colour, "B");
       else if (cryNum == 1) sprintf(colour, "G");
       else if (cryNum == 2) sprintf(colour, "R");
@@ -467,7 +467,7 @@ int makeLaBr3(int chancounter, const char *inp, const char *mscout, float gain[]
       }
       else {
         DetType = 8;
-        char colour[1];
+        char colour[2];
         DetNum = (channel - 4) / 3 + 1 + 4*(port-4);
         cryNum = (channel - 4) % 3;
         if(cryNum == 0) sprintf(colour, "A");
