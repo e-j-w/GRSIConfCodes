@@ -55,6 +55,13 @@ const int FMCRemapSeg8[8] = {1,3,5,7,9,11,13,15}; //offset from above by 1 becau
 const int FMCRemapSeg24[8] = {24,26,28,30,32,34,36,38};
 const int FMCRemapSeg32[8] = {25,27,29,31,33,35,37,39}; //same as above, but just add 24 to every channel to remap 24-39. 
 
+
+/*SHARC COLLECTOR MAP*/
+const int sharcCollector[8] = {0,0,0,0,1,1,1,1};
+const int sharcCollectorPos[8] = {0,1,2,3,0,1,2,3};
+
+
+
 void write_to_msc(const char * msc, int chancounter, char electronicaddress[], char var[], int DetType, const char *digitizer) {
   char line[128];
   ofstream mscnames;
@@ -156,6 +163,7 @@ int makeTIGRESS(int first, int last, int portOffset, int chancounter, const char
         DetType = 3;
         sprintf(var, "TIS%2.2i%sN%2.2ix", DetNum, colour, channel - 9);
       }
+      
       for(int m = 0; m < MNEMONIC.size(); m++) {
         if (strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
           sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
@@ -254,6 +262,7 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
       else outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tGRF16\n";
       if (strcmp(mscout, "NULL") != 0) {
         write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+
       }
       chancounter++;
     }
@@ -721,7 +730,7 @@ int makeSHARC(int chancounter, const int collector, const int port, const int st
   
   int collectorstartch = 0;
 
-  for (int i = 0; i < 32; i++) { //1 FMC32
+  for (int i = 0; i < 32*8; i++) { //1 FMC32
 
     int bank = startBank + (i/8); //the 'bank of 8' that this channel is mapped to
     if(bank >= SHARC_NUM_BANKS){
@@ -732,7 +741,7 @@ int makeSHARC(int chancounter, const int collector, const int port, const int st
       continue;
     }
     int bankCh = i % 8; //the channel number within the bank of 8
-    int channel = 16 + (collectorstartch % 32);
+    int channel = 16 + (collectorstartch % (32));
     
     //this will adjust the segment mapping to follow funky mapping of the first 16 channels on the ATSD to Samtec adapters
     int adjustedSegment = sharcStartCh[bank]+bankCh; //the existing mapping
@@ -752,8 +761,11 @@ int makeSHARC(int chancounter, const int collector, const int port, const int st
     
     //from now on, adjustedSegment should be correct for every channel regardless of it is mapped weirdly by the ATSD preamp or not.
     //I will now replace sharcStartCh[bank]+bankCh with adjustedSegment
+
+    int collectorNum = sharcCollector[i/(32)];
+    int collectorPort = sharcCollectorPos[i/(32)];
     
-    sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
+    sprintf(electronicaddress, "0x%01x%01x%02x", collectorNum, collectorPort, channel);
     if(sharcIsN[bank]){
       DetType = 6;
     }else{
