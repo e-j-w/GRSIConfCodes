@@ -10,8 +10,8 @@ void zerogains(float gain[], float offset[], int len);
 void zerogains(float gain[], float offset[], float non_lin[], int len);
 
 /* TIGRESS CABLING MAP */
-const int tigCollector[16]    = {3,3,3,2,0,0,1,1,2,2,2,2,0,1,1,0}; //map of TIGRESS position to collector
-const int tigCollectorPos[16] = {0,1,2,2,2,0,3,2,0,1,3,2,1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
+const int tigCollector[16]    = {3,3,3,3, 0,0,1,1, 2,2,2,2, 0,1,1,0}; //map of TIGRESS position to collector
+const int tigCollectorPos[16] = {0,1,2,3, 2,0,3,2, 0,1,3,2, 1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
 
 
 /* SHARC CABLING MAP */
@@ -208,7 +208,7 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
     }
     //int port = (i % 256) / 16;
     int channel = i % 16;
-    int ab = port%2;
+    int ab = cardNum%2;
     if(channel == 0) cryNum = 0;
     if(channel == 1) cryNum = 1;
     if(channel == 2) cryNum = 2;
@@ -232,16 +232,16 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
 
       if (channel < 4 && ab == 0) {
         DetType = 0;
-        sprintf(var, "GRG%2.2i%sN00A", DetNum, colour);
+        sprintf(var, "TIG%2.2i%sN00A", DetNum, colour);
       } else if (channel < 4 && ab != 0) {
         DetType = 1;
-        sprintf(var, "GRG%2.2i%sN00B", DetNum, colour);
+        sprintf(var, "TIG%2.2i%sN00B", DetNum, colour);
       } else if (channel > 4 && channel < 10) {
-        DetType = 7;
-        sprintf(var, "GRS%2.2i%sN%2.2iX", DetNum, colour,channel - 4);
+        DetType = 3;
+        sprintf(var, "TIS%2.2i%sN%2.2iX", DetNum, colour,channel - 4);
       } else if (channel < 15 && channel > 9) {
-        DetType = 7;
-        sprintf(var, "GRS%2.2i%sN%2.2iX", DetNum, colour, channel - 9);
+        DetType = 3;
+        sprintf(var, "TIS%2.2i%sN%2.2iX", DetNum, colour, channel - 9);
       }
 
       for(int m = 0; m < MNEMONIC.size(); m++) {

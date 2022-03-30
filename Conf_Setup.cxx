@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int num_known_exp = 9; //number of known experiments
+int num_known_exp = 10; //number of known experiments
 string exp_names[] = {
   "tigress",
   "emma",
@@ -15,7 +15,8 @@ string exp_names[] = {
   "descant",
   "tip",
   "emmatip",
-  "sharcnov2021"
+  "sharcnov2021",
+  "tipmay2022"
 };
 string exp_description[] = {
   "TIGRESS 16 Clover Configuration",
@@ -27,6 +28,7 @@ string exp_description[] = {
   "TIGRESS 16 Clover + TIP",
   "TIGRESS 12 Clovers + TIP + EMMA Focal Plane",
   "Nov 2021 - TIGRESS 12 Clovers + SHARC (19 FMC32s)",
+  "May 2022 - TIGRESS/GRIFFIN 16 Clovers + TIP",
 };
 
 int search_array(string array[], string search, int len) {
@@ -173,6 +175,17 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     chancounter = makeSHARC(chancounter, 2, 12, 0, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
     zerogains(trificgains, trificoffsets, (sizeof(trificgains)/sizeof(trificgains[0])));
     chancounter = makeTRIFIC(chancounter, 3, 0, outfile, MSC, trificgains, trificoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    break;
+  
+  case 9:
+
+    printf("May 2022 - TIGRESS/GRIFFIN 16 Clovers + TIP\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(1, 3, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeGRIFFINatTIGRESS(4, 4, chancounter, outfile, MSC, gain, offset, non_lin, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
     break;
     
