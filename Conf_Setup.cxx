@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int num_known_exp = 10; //number of known experiments
+int num_known_exp = 11; //number of known experiments
 string exp_names[] = {
   "tigress",
   "emma",
@@ -16,7 +16,8 @@ string exp_names[] = {
   "tip",
   "emmatip",
   "sharcnov2021",
-  "tipmay2022"
+  "tipmay2022",
+  "tigresstig10"
 };
 string exp_description[] = {
   "TIGRESS 16 Clover Configuration",
@@ -29,6 +30,7 @@ string exp_description[] = {
   "TIGRESS 12 Clovers + TIP + EMMA Focal Plane",
   "Nov 2021 - TIGRESS 12 Clovers + SHARC (19 FMC32s)",
   "May 2022 - TIGRESS/GRIFFIN 16 Clovers + TIP",
+  "TIGRESS with TIG-10 standard cabling",
 };
 
 int search_array(string array[], string search, int len) {
@@ -167,7 +169,7 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     
   case 8:
 
-    printf("Nov 2021 - TIGRESS 12 Clovers + SHARC (19 FMC32s)\n");
+    printf("Creating Nov 2021 - TIGRESS 12 Clovers + SHARC (19 FMC32s)\n");
     zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
     loadSegmentPar(seginp, seggains, segoffsets);
     chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
@@ -180,13 +182,23 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
   
   case 9:
 
-    printf("May 2022 - TIGRESS/GRIFFIN 16 Clovers + TIP\n");
+    printf("Creating May 2022 - TIGRESS/GRIFFIN 16 Clovers + TIP\n");
     zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
     loadSegmentPar(seginp, seggains, segoffsets);
-    chancounter = makeTIGRESS(1, 3, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeGRIFFINatTIGRESS(1, 1, chancounter, outfile, MSC, gain, offset, non_lin, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(2, 3, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeGRIFFINatTIGRESS(4, 4, chancounter, outfile, MSC, gain, offset, non_lin, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIP(chancounter, outfile, MSC, csigains, csioffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    break;
+
+  case 10:
+
+    printf("Creating TIGRESS with TIG-10 standard cabling\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESSTIG10(chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
     break;
     
   default:

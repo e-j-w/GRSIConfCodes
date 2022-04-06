@@ -13,6 +13,9 @@ void zerogains(float gain[], float offset[], float non_lin[], int len);
 const int tigCollector[16]    = {3,3,3,3, 0,0,1,1, 2,2,2,2, 0,1,1,0}; //map of TIGRESS position to collector
 const int tigCollectorPos[16] = {0,1,2,3, 2,0,3,2, 0,1,3,2, 1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
 
+//for TIG-10 setup only
+const int tigCollectorTig10[16] = {1,1,2,2, 3,-1,4,4, 3,-1,6,6,7,7,8,8};
+const int tigCollectorPosTig10[16] = {0,1,0,1, 0,0,0,1, 1,1,0,1, 0,1,0,1};
 
 /* SHARC CABLING MAP */
 /* Each entry represents a bank of 8 SHARC channels */
@@ -192,6 +195,7 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
   }
   else outfile.open(inp,ios::app);
   int num_clover = last - first + 1;
+  cout << "Making " << num_clover << " GRIFFIN clovers @ TIGRESS, positions " << first << " through " << last << "." << endl;
 
   for (int i = 0; i < num_clover*32; i++){
 
@@ -264,6 +268,84 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
 
 int makeGRIFFINatTIGRESS(int first, int last, int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
   return makeGRIFFINatTIGRESS(first,last,0,chancounter,inp,mscout,gain,offset,non_lin,MNEMONIC,customcollector,customport,customchannel);
+}
+
+int makeTIGRESSTIG10(int chancounter, const char *inp, const char *mscout, float gain[64], float offset[64], float non_lin[64], float seggains[960], float segoffsets[960], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+  char line[128];
+  char var[64];
+  int DetType, cryNum;
+  ofstream outfile;
+  if(chancounter == 0) {
+    outfile.open(inp);
+  }
+  else outfile.open(inp,ios::app);
+
+  int num_clover = 16;
+  cout << "Making " << num_clover << " TIGRESS clovers (TIG-10)." << endl; 
+
+  for (int i = 0; i < num_clover*60; i++) {
+    int DetNum = (i / 60) + 1;
+    if(DetNum > 16)
+      continue;
+    int channel = i % 10;
+    int collector = tigCollectorTig10[DetNum-1];
+    if(collector < 0){
+      continue;
+    }
+    int detChNum = (i % 60);
+    int port = detChNum/10 + (tigCollectorPosTig10[DetNum-1]*6) + 1;
+    if(detChNum < 15){
+      cryNum = 0;
+    }else if(detChNum < 30){
+      cryNum = 1;
+    }else if(detChNum < 45){
+      cryNum = 2;
+    }else{
+      cryNum = 3;
+    }
+    
+    char electronicaddress[32];
+    sprintf(electronicaddress, "0x%01x00%01x%02x", collector, port, channel);
+    //cout << "det: " << DetNum << ", address: " << electronicaddress << endl;
+    if (channel < 10) {
+      char colour[2];
+      if (cryNum == 0) sprintf(colour, "B");
+      else if (cryNum == 1) sprintf(colour, "G");
+      else if (cryNum == 2) sprintf(colour, "R");
+      else if (cryNum == 3) sprintf(colour, "W");
+
+      if((detChNum==0)||(detChNum==20)||(detChNum==30)||(detChNum==50)){
+        DetType = 0;
+        sprintf(var, "TIG%2.2i%sN00A", DetNum, colour);
+      }else if((detChNum==9)||(detChNum==29)||(detChNum==39)||(detChNum==59)){
+        DetType = 1;
+        sprintf(var, "TIG%2.2i%sN00B", DetNum, colour);
+      }else if(((detChNum>=10)&&(detChNum<20))||((detChNum>=40)&&(detChNum<50))){
+        DetType = 3;
+        int suppCh = (channel%5)+1;
+        sprintf(var, "TIS%2.2i%sN%2.2ix", DetNum, colour, suppCh);
+      }else{
+        DetType = 2;
+        sprintf(var, "TIG%2.2i%sP%2.2ix", DetNum, colour, channel);
+      }
+      for(int m = 0; m < MNEMONIC.size(); m++) {
+        if (strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
+          sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
+        }
+      }
+      int aNum = ((DetNum) - 1) * 4 + cryNum;
+      int calChNum = 60*(((collector-1)*2)+tigCollectorPosTig10[DetNum-1]) + detChNum;
+      if (DetType==2) outfile << calChNum << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tTIG10\n";
+      else if (DetType==0) outfile << calChNum << "\t" << electronicaddress << "\t" << var << "\t" << gain[aNum] << "\t" << offset[aNum] << "\t" << non_lin[aNum] << "\t" << "\tTIG10\n";
+      else outfile << calChNum << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tTIG10\n";
+      if (strcmp(mscout, "NULL") != 0) {
+        write_to_msc(mscout, calChNum, electronicaddress, var, DetType, "TIG10");
+      }
+      chancounter++;
+    }
+  }
+  outfile.close();
+  return chancounter;
 }
 
 
@@ -648,12 +730,13 @@ int makeTIP(int chancounter, const char *inp, const char *mscout, float csigains
     outfile.open(inp);
   }
   else outfile.open(inp,ios::app);
+  cout << "Making TIP CsI ball." << endl;
 
   for (int i = 0; i < 128; i++) {
-    int port = (i % 256)/16;
+    int port = (i % 64)/16;
     int channel = i % 16;
-    //int collector = (i/256) + 4;
-	int collector = (i/256);
+    int collector = (i/64) + 4;
+	  //int collector = (i/256);
     int DetNum =  i + 1;
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     int DetType = 8;
