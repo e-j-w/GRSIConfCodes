@@ -13,6 +13,24 @@ void zerogains(float gain[], float offset[], float non_lin[], int len);
 const int tigCollector[16]    = {3,3,3,3, 0,0,1,1, 2,2,2,2, 0,1,1,0}; //map of TIGRESS position to collector
 const int tigCollectorPos[16] = {0,1,2,3, 2,0,3,2, 0,1,3,2, 1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
 
+/* TIP CABLING MAP */
+const int tipPos[128] = {1,2,3,4,5,6,7,8,
+9,10,11,12,39,40,41,42,
+49,50,51,52,53,54,55,56,
+57,58,59,60,61,62,63,64,
+65,66,67,68,69,70,71,72,
+73,74,75,76,91,92,93,94,
+117,118,119,120,95,96,97,98,
+99,100,101,102,103,104,105,106,
+13,14,15,16,17,18,19,20,
+21,22,43,44,45,46,47,48,
+23,24,25,26,27,28,29,30,
+31,32,33,34,35,36,37,38,
+121,122,123,124,125,126,127,128,
+109,110,111,112,112,114,115,116,
+107,108,77,78,79,80,81,82,
+83,84,85,86,87,88,89,90};
+
 //for TIG-10 setup only
 const int tigCollectorTig10[16] = {1,1,2,2, 3,-1,4,4, 3,-1,6,6,7,7,8,8};
 const int tigCollectorPosTig10[16] = {0,1,0,1, 0,0,0,1, 1,1,0,1, 0,1,0,1};
@@ -746,7 +764,7 @@ int makeTIP(int chancounter, const char *inp, const char *mscout, float csigains
     int channel = i % 16;
     int collector = (i/64) + 4;
 	  //int collector = (i/256);
-    int DetNum =  i + 1;
+    int DetNum =  tipPos[i];
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     int DetType = 8;
     sprintf(var,"TPC%03iN00X",DetNum);
