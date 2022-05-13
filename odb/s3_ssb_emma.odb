@@ -1,0 +1,17 @@
+[/Filter/Filters/S3-or-SBB-or-EMMA]
+orCondition0 = STRING[2] :
+[32] SI1p-S-1
+[32] SI1n-S-1
+coincWindow0 = INT : 250
+orCondition1 = STRING : [32] SSB-S-1
+coincWindow1 = INT : 250
+orCondition2 = STRING : [32] EMT-S-1
+coincWindow2 = INT : 500
+EnabledDetTypes = STRING[7] :
+[32] TIGa
+[32] TIGs
+[32] TIS
+[32] SI1p
+[32] SI1n
+[32] EMT
+[32] SSB
