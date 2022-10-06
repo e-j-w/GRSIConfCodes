@@ -109,7 +109,7 @@ void load_histograms(const char analysis_filepath[], char cal_filepath[], TH1F *
   //opening calibration file that organizes data into channels
   TChannel::ReadCalFile(cal_filepath);
 
-  Int_t num_entries = analysis->GetEntries()/10;
+  Int_t num_entries = analysis->GetEntries();
   TTigress * tigress = 0;
   TGriffin * griffin = 0;
   bool tig = true;

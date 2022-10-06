@@ -14,7 +14,6 @@
 #include "TList.h"
 #include "TRandom.h"
 #include "TGenericDetector.h"
-#include "TGRSIDetectorHit.h"
 #include "TGRSIDetectorInformation.h"
 #include "TSpectrum.h"
 #include "TChannel.h"

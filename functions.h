@@ -32,8 +32,12 @@ const int tipPos[128] = {1,2,3,4,5,6,7,8,
 83,84,85,86,87,88,89,90};
 
 //for TIG-10 setup only
-const int tigCollectorTig10[16] = {1,1,2,2, 3,-1,4,4, 3,-1,6,6,7,7,8,8};
-const int tigCollectorPosTig10[16] = {0,1,0,1, 0,0,0,1, 1,1,0,1, 0,1,0,1};
+//CsI ball test June 2018
+//const int tigCollectorTig10[16] = {1,1,2,2, 3,-1,4,4, 3,-1,6,6,7,7,8,8};
+//const int tigCollectorPosTig10[16] = {0,1,0,1, 0,0,0,1, 1,1,0,1, 0,1,0,1};
+//68Se run Nov 2017
+const int tigCollectorTig10[16] =    {1,1,2,2, 3,-1,4,4, 5,-1,5,3, 7,7,8,8};
+const int tigCollectorPosTig10[16] = {0,1,0,1, 0,0,0,1,  0,1,1,1,   0,1,0,1};
 
 /* SHARC CABLING MAP */
 /* Each entry represents a bank of 8 SHARC channels */
@@ -628,7 +632,7 @@ int makeEMMAMisc(int chancounter, const char *inp, const char *mscout) {
 
   int DetType = 8;
   int channel = 15;
-  int port = 1;
+  int port = 4;
   int collector = 1;
   sprintf(var,"EMT00XP00x");
   sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
@@ -641,7 +645,7 @@ int makeEMMAMisc(int chancounter, const char *inp, const char *mscout) {
   DetType=9;
   channel=15;
   for (int j = 0; j<2; j++) {
-    port=2+j;
+    port=5+j;
     sprintf(var,"ETO%02xXP00x",j);
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";

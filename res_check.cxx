@@ -15,7 +15,6 @@
 #include "TRandom.h"
 #include "TTigress.h"
 #include "TGriffin.h"
-#include "TGRSIDetectorHit.h"
 #include "TGRSIDetectorInformation.h"
 #include "TSpectrum.h"
 #include "TChannel.h"
@@ -51,7 +50,7 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
   TTree * tree = (TTree * ) AnalysisTree->GetTree();
   printf("Reading calibration file: %s\n", calfile);
   TChannel::ReadCalFile(calfile);
-  Int_t nentries = AnalysisTree->GetEntries()/10;
+  Int_t nentries = AnalysisTree->GetEntries();
 
   int npeaks = 10;
   TTigress * tigress = 0;
@@ -123,8 +122,12 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
 
   for(int pp = 0; pp < 65; pp++){
     res[pp] = -1.0f;
-    if (gamma_singles[pp]->Integral(0, nBins) < 400) continue;
-    gamma_singles[pp]->GetXaxis()->SetRange(20, nBins);
+    int minBin = 1000; //set the minimum bin, to cut out low energy stuff
+    if (gamma_singles[pp]->Integral(minBin, nBins) < 400) continue;
+	  for(int i=0; i<minBin; i++){
+      gamma_singles[pp]->SetBinContent(i,0.0);
+    }
+    gamma_singles[pp]->GetXaxis()->SetRange(minBin, nBins);
     TSpectrum * s = new TSpectrum(2 * npeaks);
     Int_t nfound = s->Search(gamma_singles[pp], 2, "", 0.3);
     Double_t * xpeaks = s->GetPositionX();
