@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int num_known_exp = 11; //number of known experiments
+int num_known_exp = 14; //number of known experiments
 string exp_names[] = {
   "tigress",
   "emma",
@@ -17,7 +17,10 @@ string exp_names[] = {
   "emmatip",
   "sharcnov2021",
   "tipmay2022",
-  "tigresstig10"
+  "tigresstig10",
+  "tipdec2022",
+  "sharc2june2023",
+  "generic"
 };
 string exp_description[] = {
   "TIGRESS 16 Clover Configuration",
@@ -31,6 +34,9 @@ string exp_description[] = {
   "Nov 2021 - TIGRESS 12 Clovers + SHARC (19 FMC32s)",
   "May 2022 - TIGRESS/GRIFFIN 16 Clovers + TIP",
   "TIGRESS with TIG-10 standard cabling",
+  "Dec 2022 - TIGRESS 14 Clovers + TIP",
+  "June 2023 -  TIGRESS 12 Clovers + SHARC-II (test) + EMMA Focal Plane"
+  "Generic detector setup for lab/miniDAQ"
 };
 
 int search_array(string array[], string search, int len) {
@@ -174,7 +180,7 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     loadSegmentPar(seginp, seggains, segoffsets);
     chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
     zerogains(sharcgains, sharcoffsets, (sizeof(sharcgains)/sizeof(sharcgains[0])));
-    chancounter = makeSHARC(chancounter, 2, 12, 0, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeSHARC(chancounter, 0, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
     zerogains(trificgains, trificoffsets, (sizeof(trificgains)/sizeof(trificgains[0])));
     chancounter = makeTRIFIC(chancounter, 3, 0, outfile, MSC, trificgains, trificoffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
@@ -199,6 +205,38 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
     loadSegmentPar(seginp, seggains, segoffsets);
     chancounter = makeTIGRESSTIG10(chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    break;
+
+  case 11:
+
+    printf("Creating Dec 2022 - TIGRESS 14 Clovers + TIP\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(1, 4, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(6, 7, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIGRESS(9, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeTIP(chancounter, outfile, MSC, csigains, csioffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    break;
+
+  case 12:
+
+    printf("Creating June 2023 -  TIGRESS 12 Clovers + SHARC-II (test) + EMMA Focal Plane\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    zerogains(sharcgains, sharcoffsets, (sizeof(sharcgains)/sizeof(sharcgains[0])));
+    chancounter = makeSHARC2(chancounter, 0, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    chancounter = makeEMMAMisc(chancounter, outfile, MSC);
+    break;
+
+  case 13:
+
+    printf("Creating Generic detector setup for lab/miniDAQ\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeGeneric(chancounter, outfile, MSC, MNEMONIC, customcollector, customport, customchannel);
     break;
     
   default:
