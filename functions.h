@@ -89,23 +89,23 @@ const int sharcFMCRemapSeg32[8] = {25,27,29,31,33,35,37,39}; //same as above, bu
 
 /* SHARC-2 CABLING MAP */
 /* Each entry represents a bank of 8 SHARC channels */
-#define SHARC2_NUM_BANKS 36
+#define SHARC2_NUM_BANKS 46
 //position, 1-16 (-1 for empty channels)
 //positions 1-4 and 13-16 are quads, others are boxes
-const int sharc2Pos[SHARC2_NUM_BANKS]     = {11,11,11,11, 11,11,11,11, 10,10,10,10, 10,10,10,10, 10,11,9,9, 9,9,9,9, 9,9,12,12, 12,12,12,12, 12,12,12,9};
+const int sharc2Pos[SHARC2_NUM_BANKS]     = {11,11,11,11, 11,11,11,11, 10,10,10,10, 10,10,10,10, 10,11,9,9, 9,9,9,9, 9,9,12,12, 12,12,12,12, 12,12,12,9, 16,16,16,-1, 16,16,16,-1, 16,16};
 //0=D (closest to target), 1=E, 2=F (furthest from target)
-const int sharc2Dist[SHARC2_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+const int sharc2Dist[SHARC2_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0 };
 //polarity, 0=P, 1=N
-const bool sharc2IsN[SHARC2_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0};
+const bool sharc2IsN[SHARC2_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0, 1,1,1,1, 1,1,1,1, 0,0 };
 //channel number at start of bank
-const int sharc2StartCh[SHARC2_NUM_BANKS] = {0,1,16,40, 24,25,0,1, 0,1,16,40, 24,25,0,1, 16,16,0,1, 16,40,24,25, 0,1,0,1, 16,40,24,25, 0,1,16,16 };
+const int sharc2StartCh[SHARC2_NUM_BANKS] = {0,1,16,40, 24,25,0,1, 0,1,16,40, 24,25,0,1, 16,16,0,1, 16,40,24,25, 0,1,0,1, 16,40,24,25, 0,1,16,16, 0,8,16,0, 24,32,40,0, 0,8 };
 //whether to skip channels in a given bank (use every 2nd channel number)
-const int sharc2SkipCh[SHARC2_NUM_BANKS] = {1,1,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,0,0 };
+const int sharc2SkipCh[SHARC2_NUM_BANKS] = {1,1,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,0,0, 0,0,0,0, 0,0,0,0, 0,0 };
 
 /*SHARC-2 COLLECTOR MAP*/
-#define SHARC2_NUM_COL 9
-const int sharc2Collector[SHARC2_NUM_COL] = {0,0,0,0,1,1,1,1,2};
-const int sharc2CollectorPos[SHARC2_NUM_COL] = {0,1,2,3,0,1,2,3,0};
+#define SHARC2_NUM_COL 12
+const int sharc2Collector[SHARC2_NUM_COL] = {0,0,0,0,1,1,1,1,2,2,2,2};
+const int sharc2CollectorPos[SHARC2_NUM_COL] = {0,1,2,3,0,1,2,3,0,1,2,3};
 
 
 
@@ -1076,8 +1076,10 @@ int makeSHARC2(int chancounter, const int startBank, const char *inp, const char
     }else if(sharc2Pos[bank]>0){
       //for now, we're calling these S2 channels S3s
       if(sharc2IsN[bank]){
+        DetType = 5;
         sprintf(var,"ETE01EN%02iX",adjustedSegment); //'S3' ring
       }else{
+        DetType = 4;
         sprintf(var,"ETE01EP%02iX",adjustedSegment); //'S3' sector
       }
     }else{
