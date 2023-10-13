@@ -4,7 +4,11 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <math.h>
 using namespace std;
+
+const int usePSCBeta = true; //whether or not to perform PSC table Doppler correction
+const float betaPSC = 0.04; //beta factor for PSC table Doppler correction
 
 void zerogains(float gain[], float offset[], int len);
 void zerogains(float gain[], float offset[], float non_lin[], int len);
@@ -109,7 +113,7 @@ const int sharc2CollectorPos[SHARC2_NUM_COL] = {0,1,2,3,0,1,2,3,0,1,2,3};
 
 
 
-void write_to_msc(const char * msc, int chancounter, char electronicaddress[], char var[], int DetType, const char *digitizer) {
+void write_to_msc(const char * msc, int chancounter, char electronicaddress[], char var[], int DetType, const char *digitizer, float gain, float offset, float non_lin) {
   char line[128];
   ofstream mscnames;
   if(chancounter == 0) {
@@ -123,11 +127,11 @@ void write_to_msc(const char * msc, int chancounter, char electronicaddress[], c
   mscnames << line << "\n";
   sprintf(line, "set \"/DAQ/PSC/datatype[%i]\" '%i'", chancounter, DetType);
   mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/PSC/gain[%i]\" '1'", chancounter);
+  sprintf(line, "set \"/DAQ/PSC/gain[%i]\" '%f'", chancounter, gain);
   mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/PSC/offset[%i]\" '0'", chancounter);
+  sprintf(line, "set \"/DAQ/PSC/offset[%i]\" '%f'", chancounter, offset);
   mscnames << line << "\n";
-  sprintf(line, "set \"/DAQ/PSC/quadratic[%i]\" '0'", chancounter);
+  sprintf(line, "set \"/DAQ/PSC/quadratic[%i]\" '%f'", chancounter, non_lin);
   mscnames << line << "\n";
   sprintf(line, "set \"/DAQ/PSC/digitizer[%i]\" '%s'", chancounter, digitizer);
   mscnames << line << "\n";
@@ -148,7 +152,7 @@ int makeRF(int chancounter, const char *inp, const char *mscout, int collector, 
   sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
   outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
   if(strcmp(mscout, "NULL") != 0) {
-    write_to_msc(mscout, chancounter, electronicaddress, var, 15, "GRF16");
+    write_to_msc(mscout, chancounter, electronicaddress, var, 15, "GRF16", 1, 0, 0);
   }
   outfile.close();
   chancounter++;
@@ -218,12 +222,85 @@ int makeTIGRESS(int first, int last, int portOffset, int chancounter, const char
       }
       int aNum = ((DetNum) - 1) * 4 + cryNum;
       int segnum = 8 * aNum + channel;
-      if (channel < 8 ) outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << seggains[segnum] << "\t" << segoffsets[segnum] << "\t" << 0 << "\t" << "\tGRF16\n";
-      else if (channel == 9 || channel == 8) outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << gain[aNum] << "\t" << offset[aNum] << "\t" << non_lin[aNum] << "\t" << "\tGRF16\n";
-      else outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tGRF16\n";
-      if (strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+      if (channel < 8 ){
+        outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << seggains[segnum] << "\t" << segoffsets[segnum] << "\t" << 0 << "\t" << "\tGRF16\n";
+        if (strcmp(mscout, "NULL") != 0) {
+          if((usePSCBeta) && (betaPSC > 0.0)){
+            //Doppler correct the online calibration parameters
+            if(DetNum <=4){
+              //downstream lampshade
+              if((cryNum == 0)||(cryNum == 3)){
+                //downstream core
+                seggains[segnum] = seggains[segnum] / (1 + betaPSC*cos(35.0 * 3.14159265 / 180.0 ));
+              }else{
+                //upstream core
+                seggains[segnum] = seggains[segnum] / (1 + betaPSC*cos(55.0 * 3.14159265 / 180.0 ));
+              }
+            }else if(DetNum <= 12){
+              //corona
+              if((cryNum == 0)||(cryNum == 3)){
+                //downstream core
+                seggains[segnum] = seggains[segnum] / (1 + betaPSC*cos(80.0 * 3.14159265 / 180.0 ));
+              }else{
+                //upstream core
+                seggains[segnum] = seggains[segnum] / (1 + betaPSC*cos(100.0 * 3.14159265 / 180.0 ));
+              }
+            }else{
+              //upstream lampshade
+              if((cryNum == 0)||(cryNum == 3)){
+                //downstream core
+                seggains[segnum] = seggains[segnum] / (1 + betaPSC*cos(135.0 * 3.14159265 / 180.0 ));
+              }else{
+                //upstream core
+                seggains[segnum] = seggains[segnum] / (1 + betaPSC*cos(155.0 * 3.14159265 / 180.0 ));
+              }
+            }
+          }
+          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", seggains[segnum], segoffsets[segnum], 0);
+        }
+      }else if (channel == 9 || channel == 8) {
+        outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << gain[aNum] << "\t" << offset[aNum] << "\t" << non_lin[aNum] << "\t" << "\tGRF16\n";
+        if (strcmp(mscout, "NULL") != 0) {
+          if((usePSCBeta) && (betaPSC > 0.0)){
+            //Doppler correct the online calibration parameters
+            if(DetNum <=4){
+              //downstream lampshade
+              if((cryNum == 0)||(cryNum == 3)){
+                //downstream core
+                gain[aNum] = gain[aNum] / (1 + betaPSC*cos(35.0 * 3.14159265 / 180.0 ));
+              }else{
+                //upstream core
+                gain[aNum] = gain[aNum] / (1 + betaPSC*cos(55.0 * 3.14159265 / 180.0 ));
+              }
+            }else if(DetNum <= 12){
+              //corona
+              if((cryNum == 0)||(cryNum == 3)){
+                //downstream core
+                gain[aNum] = gain[aNum] / (1 + betaPSC*cos(80.0 * 3.14159265 / 180.0 ));
+              }else{
+                //upstream core
+                gain[aNum] = gain[aNum] / (1 + betaPSC*cos(100.0 * 3.14159265 / 180.0 ));
+              }
+            }else{
+              //upstream lampshade
+              if((cryNum == 0)||(cryNum == 3)){
+                //downstream core
+                gain[aNum] = gain[aNum] / (1 + betaPSC*cos(135.0 * 3.14159265 / 180.0 ));
+              }else{
+                //upstream core
+                gain[aNum] = gain[aNum] / (1 + betaPSC*cos(155.0 * 3.14159265 / 180.0 ));
+              }
+            }
+          }
+          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", gain[aNum], offset[aNum], non_lin[aNum]);
+        }
+      }else {
+        outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tGRF16\n";
+        if (strcmp(mscout, "NULL") != 0) {
+          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", 1, 0, 0);
+        }
       }
+      
       chancounter++;
     }
   }
@@ -309,7 +386,7 @@ int makeGRIFFINatTIGRESS(int first, int last, int portOffset, int chancounter, c
       if (channel < 4) outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << gain[aNum] << "\t" << offset[aNum] << "\t" << non_lin[aNum] << "\t" << "\tGRF16\n";
       else outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tGRF16\n";
       if (strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", gain[aNum], offset[aNum], non_lin[aNum]);
 
       }
       chancounter++;
@@ -392,7 +469,7 @@ int makeTIGRESSTIG10(int chancounter, const char *inp, const char *mscout, float
       else if (DetType==0) outfile << calChNum << "\t" << electronicaddress << "\t" << var << "\t" << gain[aNum] << "\t" << offset[aNum] << "\t" << non_lin[aNum] << "\t" << "\tTIG10\n";
       else outfile << calChNum << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tTIG10\n";
       if (strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, calChNum, electronicaddress, var, DetType, "TIG10");
+        write_to_msc(mscout, calChNum, electronicaddress, var, DetType, "TIG10", gain[aNum], offset[aNum], non_lin[aNum]);
       }
       chancounter++;
     }
@@ -464,7 +541,7 @@ int makeGRIFFIN(int chancounter, const char *inp, const char *mscout, float gain
       if (channel < 4) outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << gain[aNum] << "\t" << offset[aNum] << "\t" << non_lin[aNum] << "\t" << "\tGRF16\n";
       else outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\t" << "\tGRF16\n";
       if (strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", gain[aNum], offset[aNum], non_lin[aNum]);
       }
       chancounter++;
     }
@@ -499,7 +576,7 @@ int makeSCEPTAR(int chancounter, const char *inp, const char *mscout, std::vecto
       }
       outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
       if (strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, chancounter, electronicaddress, var, 2, "GRF16");
+        write_to_msc(mscout, chancounter, electronicaddress, var, 2, "GRF16", 1, 0, 0);
       }
       chancounter++;
     }
@@ -526,7 +603,7 @@ int makeZDS(int chancounter, const char *inp, const char *mscout, int collector,
   }
   outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
   if(strcmp(mscout, "NULL") != 0) {
-    write_to_msc(mscout, chancounter, electronicaddress, var, 9, "GRF16");
+    write_to_msc(mscout, chancounter, electronicaddress, var, 9, "GRF16", 1, 0, 0);
   }
   outfile.close();
   chancounter++;
@@ -557,7 +634,7 @@ int makePACES(int chancounter, const char *inp, const char *mscout, float gain[]
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << gain[i] << "\t" << offset[i] << "\t" << non_lin[i] << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, 5, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, 5, "GRF16", gain[i], offset[i], non_lin[i]);
     }
     chancounter++;
   }
@@ -596,7 +673,7 @@ int makeLaBr3(int chancounter, const char *inp, const char *mscout, float gain[]
         }
         outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << gain[DetNum-1] << "\t" << offset[DetNum-1] << "\t" << non_lin[DetNum-1] << "\tGRF16\n";
         if (strcmp(mscout, "NULL") != 0) {
-          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", gain[DetNum-1], offset[DetNum-1], non_lin[DetNum-1]);
         }
         chancounter++;
       }
@@ -616,7 +693,7 @@ int makeLaBr3(int chancounter, const char *inp, const char *mscout, float gain[]
         }
         outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
         if (strcmp(mscout, "NULL") != 0) {
-          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", 1, 0, 0);
         }
         chancounter++;
       }
@@ -633,7 +710,7 @@ int makeLaBr3(int chancounter, const char *inp, const char *mscout, float gain[]
         }
         outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
         if (strcmp(mscout, "NULL") != 0) {
-          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+          write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", 1, 0, 0);
         }
         chancounter++;
       }
@@ -660,7 +737,7 @@ int makeEMMAMisc(int chancounter, const char *inp, const char *mscout) {
   sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
   outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
   if(strcmp(mscout, "NULL") != 0) {
-    write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+    write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", 1, 0, 0);
   }
   chancounter++;
 
@@ -672,7 +749,7 @@ int makeEMMAMisc(int chancounter, const char *inp, const char *mscout) {
     sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, channel);
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", 1, 0, 0);
     }
     chancounter++;
   }
@@ -704,7 +781,7 @@ int makeS3Emma(int chancounter, const int collector, const char *inp, const char
       }
       outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << s3gains[i] << "\t" << s3offsets[i] << "\t" << 0 << "\tGRF16\n";
       if(strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", s3gains[i], s3offsets[i], 0);
       }
       chancounter++;
     }
@@ -718,7 +795,7 @@ int makeS3Emma(int chancounter, const int collector, const char *inp, const char
       }
       outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << s3gains[i] << "\t" << s3offsets[i] << "\t" << 0 << "\tGRF16\n";
       if(strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", s3gains[i], s3offsets[i], 0);
       }
       chancounter++;
     }
@@ -752,7 +829,7 @@ int makeS3Bambino(int chancounter, const char *inp, const char *mscout, float s3
       }
       outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << s3gains[i] << "\t" << s3offsets[i] << "\t" << 0 << "\tGRF16\n";
       if(strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", s3gains[i], s3offsets[i], 0);
       }
       chancounter++;
     }
@@ -766,7 +843,7 @@ int makeS3Bambino(int chancounter, const char *inp, const char *mscout, float s3
       }
       outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << s3gains[i] << "\t" << s3offsets[i] << "\t" << 0 << "\tGRF16\n";
       if(strcmp(mscout, "NULL") != 0) {
-        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+        write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", s3gains[i], s3offsets[i], 0);
       }
       chancounter++;
     }
@@ -801,7 +878,7 @@ int makeTIP(int chancounter, const char *inp, const char *mscout, float csigains
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << csigains[i] << "\t" << csioffsets[i] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16", csigains[i], csioffsets[i], 0);
     }
     chancounter++;
   }
@@ -833,7 +910,7 @@ int makeTIPEMMA(int chancounter, const char *inp, const char *mscout, float csig
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << csigains[i] << "\t" << csioffsets[i] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16", csigains[i], csioffsets[i], 0);
     }
     chancounter++;
   }
@@ -989,7 +1066,7 @@ int makeSHARC(int chancounter, const int startBank, const char *inp, const char 
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << sharcgains[i] << "\t" << sharcoffsets[i] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", sharcgains[i], sharcoffsets[i], 0);
     }
     chancounter++;
     collectorstartch++;
@@ -1094,7 +1171,7 @@ int makeSHARC2(int chancounter, const int startBank, const char *inp, const char
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << sharcgains[i] << "\t" << sharcoffsets[i] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", sharcgains[i], sharcoffsets[i], 0);
     }
     chancounter++;
     collectorstartch++;
@@ -1165,7 +1242,7 @@ int makeTRIFIC(int chancounter, const int startcollector, const int startport, c
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << trificgains[i] << "\t" << trificoffsets[i] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", trificgains[i], trificoffsets[i], 0);
     }
     chancounter++;
     collectorstartch++;
@@ -1200,7 +1277,7 @@ int makeDESCANT(int chancounter, const char *inp, const char *mscout, std::vecto
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" << var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tCAEN\n";
     if (strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "CAEN");
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "CAEN", 1, 0, 0);
     }
     chancounter++;
   }
@@ -1232,7 +1309,7 @@ int makeGeneric(int chancounter, const char *inp, const char *mscout, std::vecto
     }
     outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << 1 << "\t" << 0 << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16");
+      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16", 1, 0, 0);
     }
     chancounter++;
   }
