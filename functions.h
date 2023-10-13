@@ -7,8 +7,8 @@
 #include <math.h>
 using namespace std;
 
-const int usePSCBeta = true; //whether or not to perform PSC table Doppler correction
-const float betaPSC = 0.04; //beta factor for PSC table Doppler correction
+const int usePSCBeta = false; //whether or not to perform PSC table Doppler correction
+const float betaPSC = 0.0426; //beta factor for PSC table Doppler correction
 
 void zerogains(float gain[], float offset[], int len);
 void zerogains(float gain[], float offset[], float non_lin[], int len);
@@ -17,23 +17,26 @@ void zerogains(float gain[], float offset[], float non_lin[], int len);
 const int tigCollector[16]    = {3,3,3,3, 0,0,1,1, 2,2,2,2, 0,1,1,0}; //map of TIGRESS position to collector
 const int tigCollectorPos[16] = {0,1,2,3, 2,0,3,2, 0,1,3,2, 1,1,0,3}; //map of TIGRESS position to collector sub-position (first, 2nd, 3rd, 4th in collector)
 
-/* TIP CABLING MAP */
-const int tipPos[128] = {1,2,3,4,5,6,7,8,
-9,10,11,12,39,40,41,42,
-49,50,51,52,53,54,55,56,
-57,58,59,60,61,62,63,64,
-65,66,67,68,69,70,71,72,
-73,74,75,76,91,92,93,94,
-117,118,119,120,95,96,97,98,
-99,100,101,102,103,104,105,106,
-13,14,15,16,17,18,19,20,
-21,22,43,44,45,46,47,48,
-23,24,25,26,27,28,29,30,
-31,32,33,34,35,36,37,38,
-121,122,123,124,125,126,127,128,
-109,110,111,112,113,114,115,116,
-107,108,77,78,79,80,81,82,
-83,84,85,86,87,88,89,90};
+/* TIP CABLING MAP - original */
+/*const int tipPos[128] = {1,2,3,4,5,6,7,8,9,10,11,12,39,40,41,42,
+49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,
+65,66,67,68,69,70,71,72,73,74,75,76,91,92,93,94,
+117,118,119,120,95,96,97,98,99,100,101,102,103,104,105,106,
+13,14,15,16,17,18,19,20,21,22,43,44,45,46,47,48,
+23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,
+121,122,123,124,125,126,127,128,109,110,111,112,113,114,115,116,
+107,108,77,78,79,80,81,82,83,84,85,86,87,88,89,90};*/
+
+/* TIP CABLING MAP - Oct 2023 */
+const int tipPos[128] = {1,2,3,4,5,6,7,8,9,10,11,12,39,40,41,42,
+49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,
+23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,
+13,14,15,16,17,18,19,20,21,22,43,44,45,46,47,48,
+121,122,123,124,125,126,127,128,109,110,111,112,113,114,115,116,
+117,118,119,120,95,96,97,98,99,100,101,102,103,104,105,106,
+65,66,67,68,69,70,71,72,73,74,75,76,91,92,93,94,
+107,108,77,78,79,80,81,82,83,84,85,86,87,88,89,90};
+
 
 //for TIG-10 setup only
 //CsI ball test June 2018
@@ -876,9 +879,9 @@ int makeTIP(int chancounter, const char *inp, const char *mscout, float csigains
         sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
       }
     }
-    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << csigains[i] << "\t" << csioffsets[i] << "\t" << 0 << "\tGRF16\n";
+    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << csigains[DetNum-1] << "\t" << csioffsets[DetNum-1] << "\t" << 0 << "\tGRF16\n";
     if(strcmp(mscout, "NULL") != 0) {
-      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16", csigains[i], csioffsets[i], 0);
+      write_to_msc(mscout, chancounter, electronicaddress, var, 12, "GRF16", csigains[DetNum-1], csioffsets[DetNum-1], 0);
     }
     chancounter++;
   }
