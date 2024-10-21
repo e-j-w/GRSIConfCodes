@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int num_known_exp = 14; //number of known experiments
+int num_known_exp = 17; //number of known experiments
 string exp_names[] = {
   "tigress",
   "emma",
@@ -20,6 +20,9 @@ string exp_names[] = {
   "tigresstig10",
   "tipdec2022",
   "sharc2june2023",
+  "sharc2july2024",
+  "trific2024",
+  "sharc2nov2024",
   "generic"
 };
 string exp_description[] = {
@@ -35,7 +38,10 @@ string exp_description[] = {
   "May 2022 - TIGRESS/GRIFFIN 16 Clovers + TIP",
   "TIGRESS with TIG-10 standard cabling",
   "Dec 2022 - TIGRESS 14 Clovers + TIP",
-  "June 2023 -  TIGRESS 12 Clovers + SHARC-II (test) + EMMA Focal Plane"
+  "June 2023 -  TIGRESS 12 Clovers + SHARC-II (test) + EMMA Focal Plane",
+  "July 2024 -  TIGRESS 12 Clovers + SHARC-II + EMMA Focal Plane",
+  "Sep 2024 - TRIFIC DAQ Test",
+  "Nov 2024 -  TIGRESS 12 Clovers + SHARC-II + EMMA + TRIFIC@TBragg",
   "Generic detector setup for lab/miniDAQ"
 };
 
@@ -226,12 +232,45 @@ bool CreateConfFile(const char * experiment, const char * MSC = "NULL", const ch
     loadSegmentPar(seginp, seggains, segoffsets);
     chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
     zerogains(sharcgains, sharcoffsets, (sizeof(sharcgains)/sizeof(sharcgains[0])));
-    chancounter = makeSHARC2(chancounter, 0, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeSHARC2Test(chancounter, 0, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
     chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
     chancounter = makeEMMAMisc(chancounter, outfile, MSC);
     break;
 
   case 13:
+
+    printf("Creating July 2024 -  TIGRESS 12 Clovers + SHARC-II + EMMA Focal Plane\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    zerogains(sharcgains, sharcoffsets, (sizeof(sharcgains)/sizeof(sharcgains[0])));
+    chancounter = makeSHARC2(chancounter, 0, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    chancounter = makeEMMAMisc(chancounter, outfile, MSC);
+    break;
+
+  case 14:
+
+    printf("Creating TRIFIC Test 2024\n");
+    zerogains(trificgains, trificoffsets, (sizeof(trificgains)/sizeof(trificgains[0])));
+    chancounter = makeTRIFICDistributed(chancounter, 0, 0, outfile, MSC, trificgains, trificoffsets, MNEMONIC, customcollector, customport, customchannel);
+    break;
+
+  case 15:
+
+    printf("Creating TIGRESS+SHARC2+EMMA and TRIFIC Nov 2024\n");
+    zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));
+    loadSegmentPar(seginp, seggains, segoffsets);
+    chancounter = makeTIGRESS(5, 16, chancounter, outfile, MSC, gain, offset, non_lin, seggains, segoffsets, MNEMONIC, customcollector, customport, customchannel);
+    zerogains(sharcgains, sharcoffsets, (sizeof(sharcgains)/sizeof(sharcgains[0])));
+    chancounter = makeSHARC2(chancounter, 0, outfile, MSC, sharcgains, sharcoffsets, MNEMONIC, customcollector, customport, customchannel);
+    chancounter = makeRF(chancounter, outfile, MSC, 1, 0, 15);
+    chancounter = makeEMMAMisc(chancounter, outfile, MSC);
+    zerogains(trificgains, trificoffsets, (sizeof(trificgains)/sizeof(trificgains[0])));
+    chancounter = makeTRIFICDistributed(chancounter, 0, 0, outfile, MSC, trificgains, trificoffsets, MNEMONIC, customcollector, customport, customchannel);
+    break;
+
+  case 16:
 
     printf("Creating Generic detector setup for lab/miniDAQ\n");
     zerogains(gain, offset, non_lin, (sizeof(gain)/sizeof(gain[0])));

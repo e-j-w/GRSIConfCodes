@@ -96,23 +96,44 @@ const int sharcFMCRemapSeg32[8] = {25,27,29,31,33,35,37,39}; //same as above, bu
 
 /* SHARC-2 CABLING MAP */
 /* Each entry represents a bank of 8 SHARC channels */
-#define SHARC2_NUM_BANKS 46
+#define SHARC2_NUM_BANKS 56
 //position, 1-16 (-1 for empty channels)
 //positions 1-4 and 13-16 are quads, others are boxes
-const int sharc2Pos[SHARC2_NUM_BANKS]     = {11,11,11,11, 11,11,11,11, 10,10,10,10, 10,10,10,10, 10,11,9,9, 9,9,9,9, 9,9,12,12, 12,12,12,12, 12,12,12,9, 16,16,16,-1, 16,16,16,-1, 16,16};
+const int sharc2Pos[SHARC2_NUM_BANKS]     = {11,11,11,11, 11,11,11,11, 10,10,10,10, 10,10,10,10, 10,11,9,9, 9,9,9,9, 9,9,12,12, 12,12,12,12, 12,12,12,9,   16,16,16,-1, 16,16,16,-1, 16,16,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1};//, 1,1,1,1, 1,1,1,1};
 //0=D (closest to target), 1=E, 2=F (furthest from target)
-const int sharc2Dist[SHARC2_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0 };
+const int sharc2Dist[SHARC2_NUM_BANKS]    = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,   0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};//, 0,0,0,0, 0,0,0,0 };
 //polarity, 0=P, 1=N
-const bool sharc2IsN[SHARC2_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0, 1,1,1,1, 1,1,1,1, 0,0 };
+const bool sharc2IsN[SHARC2_NUM_BANKS]    = {1,1,1,1, 1,1,0,0, 1,1,1,1, 1,1,0,0, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,1,1, 0,0,0,0,   1,1,1,1, 1,1,1,1, 0,0,0,0, 0,0,0,0, 0,0,0,0};//, 1,1,1,1,  1,1,0,0};
 //channel number at start of bank
-const int sharc2StartCh[SHARC2_NUM_BANKS] = {0,1,16,40, 24,25,0,1, 0,1,16,40, 24,25,0,1, 16,16,0,1, 16,40,24,25, 0,1,0,1, 16,40,24,25, 0,1,16,16, 0,8,16,0, 24,32,40,0, 0,8 };
+//const int sharc2StartCh[SHARC2_NUM_BANKS] = {0,1,16,40, 24,25,0,1, 0,1,16,40, 24,25,0,1, 16,16,0,1, 16,40,24,25, 0,1,0,1, 16,40,24,25, 0,1,16,16,   47,45,15,-1, 0,2,32,-1, 12,13,-1,-1, 0,0,0,0, 0,0,0,0,  47,45,15,32, 0,2,12,13};
+const int sharc2StartCh[SHARC2_NUM_BANKS] = {0,1,16,40, 24,25,0,1, 0,1,16,40, 24,25,0,1, 16,16,0,1, 16,40,24,25, 0,1,0,1, 16,40,24,25, 0,1,16,16,   47,45,15,-1, 0,2,32,-1, 12,13,-1,-1, 0,0,0,0, 0,0,0,0};//,  1,3,33,0, 46,44,12,13};
 //whether to skip channels in a given bank (use every 2nd channel number)
-const int sharc2SkipCh[SHARC2_NUM_BANKS] = {1,1,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,0,0, 0,0,0,0, 0,0,0,0, 0,0 };
+const int sharc2SkipCh[SHARC2_NUM_BANKS] = {1,1,0,0, 1,1,1,1, 1,1,0,0, 1,1,1,1, 0,0,1,1, 0,0,1,1, 1,1,1,1, 0,0,1,1, 1,1,0,0,   2,2,1,0, 2,2,1,0, 1,1,0,0, 0,0,0,0, 0,0,0,0};//, 2,2,1,1, 2,2,1,1}; //a "2" will skip every 4. This is needed for the SHARC2 compact S2 detectors
+
+//const int sharc2NegChanIncrement[SHARC2_NUM_BANKS] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,      1,1,1,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,1,1,0, 0,0,0,0};
+const int sharc2NegChanIncrement[SHARC2_NUM_BANKS] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,      1,1,1,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};//, 0,0,0,0, 1,1,0,0};
+
+
+/*
+//these are the mappings for the compact S2 detectors. July 2024
+const int sharc2UScS2Pos[12] = {1,3,33,-1,0,2,32,-1,0,1,-1,-1}; //starting position for the bank of 8
+const int sharc2UScS2DoubleSeg[12] = {1,1,0,0,1,1,0,0,0,0,0,0}; //0 being increment by 2, 1 being increment by 4
+const int sharc2UScS2SecModulation[12] = {0,0,0,0,0,0,0,0,1,1,0,0};//if we have a rollover, then we need to modulate by 16 (for the sectors)
+
+//const int sharc2UScS2Seg[96] = {1,5,9,13,17,21,25,29,3,7,11,15,19,23,27,31,33,35,37,39,41,43,45,47,-1,-1,-1,-1,-1,-1,-1,-1,0,4,8,12,16,20,24,28,2,6,10,14,18,22,26,30,32,34,36,38,40,42,44,46,-1,-1,-1,-1,-1,-1,-1,-1,12,14,0,2,4,6,8,10,13,15,1,3,5,7,9,11,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}; //upstream. -1 is not in use
+//const int sharc2UScS2IsN[96] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+
+const int sharc2DScS2Pos[]={}]
+
+const int sharc2DScS2seg[64] = {1,5,9,13,17,21,25,29,3,7,11,15,19,23,27,31,33,35,37,39,41,43,45,47,32,34,36,38,40,42,44,46,0,4,8,12,16,20,24,28,2,6,10,14,18,22,26,30,12,14,0,2,4,6,8,10,13,15,1,3,5,7,9,11};
+const int sharc2DScS2IsN[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+*/
+
 
 /*SHARC-2 COLLECTOR MAP*/
-#define SHARC2_NUM_COL 12
-const int sharc2Collector[SHARC2_NUM_COL] = {0,0,0,0,1,1,1,1,2,2,2,2};
-const int sharc2CollectorPos[SHARC2_NUM_COL] = {0,1,2,3,0,1,2,3,0,1,2,3};
+#define SHARC2_NUM_COL 16
+const int sharc2Collector[SHARC2_NUM_COL] = {0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3};
+const int sharc2CollectorPos[SHARC2_NUM_COL] = {0,1,2,3,0,1,2,3,0,1,2,3,0,1,2,3};
 
 
 
@@ -723,6 +744,7 @@ int makeLaBr3(int chancounter, const char *inp, const char *mscout, float gain[]
 }
 // EMMA trigger and SSBs
 int makeEMMAMisc(int chancounter, const char *inp, const char *mscout) {
+  cout << "Making EMMA."<< endl; 
   char line[128];
   char var[64];
   char electronicaddress[32];
@@ -1107,6 +1129,166 @@ int makeSHARC2(int chancounter, const int startBank, const char *inp, const char
     //this will adjust the segment mapping to follow funky mapping of the channels
     int adjustedSegment = sharc2StartCh[bank];
     if(sharc2SkipCh[bank]==1){
+      if (1 == sharc2NegChanIncrement[bank]){//this does the negative incrementing for S2 segments
+        adjustedSegment -= 2*bankCh; //skip channels
+        
+      }
+      else { //normal positive incrementing
+        adjustedSegment += 2*bankCh; //skip channels
+      }
+    }else if (2 == sharc2SkipCh[bank]){
+      if (1 == sharc2NegChanIncrement[bank]){//this does the negative incrementing for S2 segments
+        //std::cout << "\nAdjusting chan " << chancounter << " segment from " << adjustedSegment;
+
+        adjustedSegment -=4*bankCh; //skip channels 4. This is for the compact S2 detector
+        //std::cout << " to " << adjustedSegment;
+      }
+      else { //normal positive incrementing
+        
+        adjustedSegment +=4*bankCh; //skip channels 4. This is for the compact S2 detector
+        
+      }
+    }
+
+    else{
+      adjustedSegment += bankCh;
+    }
+    
+    
+    //from now on, adjustedSegment should be correct for every channel regardless of it is mapped weirdly by the ATSD preamp or not.
+    //I will now replace sharcStartCh[bank]+bankCh with adjustedSegment
+
+    int collectorNum = sharc2Collector[i/(32)];
+    int collectorPort = sharc2CollectorPos[i/(32)];
+    
+    sprintf(electronicaddress, "0x%01x%01x%02x", collectorNum, collectorPort, channel);
+    if(sharc2IsN[bank]){
+      DetType = 6;
+    }else{
+      DetType = 7;
+    }
+    if(sharc2Pos[bank]>4 && sharc2Pos[bank]<13){
+      if(sharc2IsN[bank]){
+        switch(sharc2Dist[bank]){
+          case 0:
+          default:
+            sprintf(var,"SZB%02iDN%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+          case 1:
+            sprintf(var,"SZB%02iEN%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+          case 2:
+            sprintf(var,"SZB%02iFN%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+        }
+      }else{
+        switch(sharc2Dist[bank]){
+          case 0:
+          default:
+            sprintf(var,"SZB%02iDP%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+          case 1:
+            sprintf(var,"SZB%02iEP%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+          case 2:
+            sprintf(var,"SZB%02iFP%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+        }
+      }
+    }else if(sharc2Pos[bank]>0){
+      //this does the compact S2 detectors
+     //we need to flip the data types here now. IDK but it works
+     if(sharc2IsN[bank]){
+      	DetType = 7;
+   	 }else{
+     	DetType = 6;
+     }
+      if(!sharc2IsN[bank]){
+      if (15 < adjustedSegment) adjustedSegment = adjustedSegment-16; //this is needed to make sure the sectors wrap around to 0 correctly.
+        
+        switch(sharc2Dist[bank]){
+          case 0:
+          default:
+            sprintf(var,"SZZ%02iDN%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+          case 1:
+            sprintf(var,"SZZ%02iEN%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+          case 2:
+            sprintf(var,"SZZ%02iFN%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+        }
+      }else{
+        
+        switch(sharc2Dist[bank]){
+          case 0:
+          default:
+            sprintf(var,"SZZ%02iDP%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+          case 1:
+            sprintf(var,"SZZ%02iEP%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+          case 2:
+            sprintf(var,"SZZ%02iFP%02iX",sharc2Pos[bank],adjustedSegment);
+            break;
+        }
+      }
+    }else{
+      collectorstartch++;
+      continue;
+    }
+    
+    for(int m = 0; m < MNEMONIC.size(); m++) {
+      if(strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
+        sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
+      }
+    }
+    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << sharcgains[i] << "\t" << sharcoffsets[i] << "\t" << 0 << "\tGRF16\n";
+    if(strcmp(mscout, "NULL") != 0) {
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", sharcgains[i], sharcoffsets[i], 0);
+    }
+    chancounter++;
+    collectorstartch++;
+    
+  }
+  
+   
+  
+  return chancounter;
+}
+
+
+//THIS ONE is the test beamtime from 2023. It is not a full, correct SHARC-2 Mapping!!!
+
+// SHARC-II cabled into an FMC32 on the specified port and collector
+// assumed to contain 4 banks of 8 channels, starting at startBank (should be a 0-indexed value
+// based on the SHARC cabling map at the top of this file)
+int makeSHARC2Test(int chancounter, const int startBank, const char *inp, const char *mscout, const float sharcgains[], const float sharcoffsets[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+  cout << "Making SHARC-II."<< endl; 
+  char line[128];
+  char var[64];
+  char electronicaddress[32];
+  int DetType;
+  ofstream outfile;
+  if(chancounter == 0) {
+    outfile.open(inp);
+  }
+  else outfile.open(inp,ios::app);
+  
+  int collectorstartch = 0;
+
+  for (int i = 0; i < 32*SHARC2_NUM_COL; i++) { //1 FMC32
+
+    int bank = startBank + (i/8); //the 'bank of 8' that this channel is mapped to
+    if(bank >= SHARC2_NUM_BANKS){
+      continue;
+    }
+    int bankCh = i % 8; //the channel number within the bank of 8
+    int channel = 16 + (collectorstartch % (32));
+    
+    //this will adjust the segment mapping to follow funky mapping of the channels
+    int adjustedSegment = sharc2StartCh[bank];
+    if(sharc2SkipCh[bank]==1){
       adjustedSegment += 2*bankCh; //skip channels
     }else{
       adjustedSegment += bankCh;
@@ -1179,6 +1361,104 @@ int makeSHARC2(int chancounter, const int startBank, const char *inp, const char
     chancounter++;
     collectorstartch++;
     
+  }
+  return chancounter;
+}
+
+
+
+//trific distributed onto channel 16 of a bunch of digitizers.
+int makeTRIFICDistributed(int chancounter, const int startcollector, const int startport, const char *inp, const char *mscout, float trificgains[], float trificoffsets[], std::vector<std::string> MNEMONIC, std::vector<int> customcollector, std::vector<int> customport, std::vector<int> customchannel){
+  cout << "Making TRIFIC Distributed."<< endl; 
+  char line[128];
+  char var[64];
+  char electronicaddress[32];
+  ofstream outfile;
+  if(chancounter == 0) {
+    outfile.open(inp);
+  }
+  else outfile.open(inp,ios::app);
+
+  //custom channels for x and y
+  //std::vector<int> xGrids = {1,6,5,2,4,3,7,12,8,11,9,10,99,99,99,99}; //det 5 //99 signals bad grid, not in use
+  //new ones sep 13
+  std::vector<int> xGrids = {6,1,5,2,4,3,7,12,8,11,9,10,99,99,99,99};
+  std::vector<int> yGrids = {4,3,5,2,6,1,10,9,11,8,12,7,99,99,99,99}; //det 3
+  
+	//custom channel for 1st (indexed at 0) collector b/c DAC #0, 4,5,6 channel 16s are taken
+	std::vector<int> coll1Channels = {99,1,4,5,99,99,99,6,7,8,9,10,11,12,13,14}; //these are the pigtail channels
+  
+
+
+  int collector = startcollector;
+  int collectorstartport = startport;
+  int collectorstartch = 0;
+
+  for (int i = 0; i < 64; i++) {
+
+    //int port = collectorstartport + i%16;
+    //int channel = collectorstartch + i%16; //DAQ channel
+    int port = collectorstartport + collectorstartch;
+    int channel = collectorstartch % 16;
+    
+    //roll over to the next collector if neccesary
+    if(port>15){
+      collector++;
+      port=0;
+      channel=0;
+      collectorstartport=0;
+      collectorstartch=0;
+    }
+    
+    
+    
+	//std::cout << "\nport is " << port;
+	if (1 == i/16 && 99 == coll1Channels[i%16]){//this skips the  ADC channels not in use for the 1st collector. 0x100f is the RF and 0x140f is a clock signal(?)
+		//chancounter++;
+		//std::cout << "\ni is "<< i << " and we triggered";fflush(stdout);
+		collectorstartch++;
+		continue; 
+	}
+	
+    
+
+    int DetType = 10;
+    switch(i/16){
+      case 3:
+        sprintf(var,"TFC03YN%02iX",xGrids[i-48]);
+        DetType = 11;
+        break;
+      case 2:
+        sprintf(var,"TFC05XN%02iX",yGrids[i-32]);
+        DetType = 11;
+        break;
+      case 1:
+        sprintf(var,"TFC%02iSP00X",(coll1Channels[i%16]*2-1)); //odd numbered grids
+        DetType = 11;
+        break;
+      case 0:
+        sprintf(var,"TFC%02iSN00X",(channel+1)*2); //even numbered grids
+        DetType = 10;
+        break;
+      default:
+        cout << "Unknown TRIFIC channel: " << i << endl;
+        chancounter++;
+        collectorstartch++;
+        continue;
+    }
+
+    sprintf(electronicaddress, "0x%01x%01x%02x", collector, port, 15); //always channel 16 for the distributed trific
+    for(int m = 0; m < MNEMONIC.size(); m++) {
+      if (strcmp(var,MNEMONIC.at(m).c_str()) == 0) {
+        sprintf(electronicaddress, "0x%01x%01x%02x", customcollector.at(m), customport.at(m), customchannel.at(m));
+      }
+    }
+    outfile << chancounter << "\t" << electronicaddress << "\t" <<  var << "\t" << trificgains[i] << "\t" << trificoffsets[i] << "\t" << 0 << "\tGRF16\n";
+    if(strcmp(mscout, "NULL") != 0) {
+      write_to_msc(mscout, chancounter, electronicaddress, var, DetType, "GRF16", trificgains[i], trificoffsets[i], 0);
+    }
+    chancounter++;
+    collectorstartch++;
   }
   return chancounter;
 }
