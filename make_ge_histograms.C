@@ -9,7 +9,7 @@ Double_t num_bins = 8192; //number of bins to read in from histograms
 Double_t min_bin = 0; //first bin in histogram
 Double_t max_bin = 4096; //last bin in histogram
 Int_t num_cores = 64;
-bool multirun = false; // Uses 1 subrun or all available
+bool multirun = true; // Uses 1 subrun or all available
 
 //function to load histograms and add them to TLists - Uses Multiple Subruns
 void load_sum_histograms(const char analysis_filepath[], char cal_filepath[], TH1F *hist[], Int_t source_count, Int_t num_cores) {
@@ -101,7 +101,7 @@ void load_histograms(const char analysis_filepath[], char cal_filepath[], TH1F *
   TFile *input_file = new TFile(analysis_filepath, "READ");
   if (!input_file->IsOpen()) {
     cout << "Cannot open input file!" << endl;
-    return 0;
+    return;
   }//if
   TChain *analysis = (TChain *) input_file->Get("AnalysisTree");
   TTree *tree = (TTree *) analysis->GetTree();
