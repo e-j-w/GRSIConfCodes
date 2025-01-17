@@ -120,7 +120,7 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
   float res[64];
   int numCry = 0;
 
-  for(int pp = 0; pp < 65; pp++){
+  for(int pp = 0; pp < 64; pp++){
     res[pp] = -1.0f;
     int minBin = 1000; //set the minimum bin, to cut out low energy stuff
     if (gamma_singles[pp]->Integral(minBin, nBins) < 400) continue;
@@ -164,7 +164,7 @@ void res_check(char const * infile, char const * calfile, char const * outfile) 
 
   avgRes /= numCry*1.0f;
   float stdevRes = 0.0f;
-  for(int pp = 0; pp < 65; pp++){
+  for(int pp = 0; pp < 64; pp++){
     if(res[pp] >= 0.0f){
       stdevRes += (res[pp] - avgRes)*(res[pp] - avgRes);
     }
