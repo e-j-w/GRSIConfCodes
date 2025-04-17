@@ -2,7 +2,7 @@ LINKFLAGS = -Wl,--no-as-needed $(shell root-config --cflags --libs --glibs) -lSp
 CXXFLAGS = -O2 -Wl,--copy-dt-needed-entries
 GRSISORT = -L/opt/local/lib -lX11 -lXpm $(shell grsi-config --cflags --all-libs --GRSIData-libs) -I$(GRSISYS)/GRSIData/include
 
-all: SetupConfFile CustomChan ConstructCalibrationFile ChanCheck Calibrate Calibrate_LaBr ResCheck Alphacal EffCheck Efficiency
+all: SetupConfFile CustomChan ConstructCalibrationFile ChanCheck Calibrate Calibrate_LaBr ResCheck Alphacal Efficiency
 
 SetupConfFile: Conf_Setup.cxx functions.h CalibrationParameters.h
 	g++ Conf_Setup.cxx $(CXXFLAGS) -o SetupConfFile
@@ -20,10 +20,8 @@ ResCheck: res_check.cxx
 	g++ res_check.cxx $(LINKFLAGS) $(CXXFLAGS) $(GRSISORT) -o ResCheck 
 Alphacal: AlphaCalibration.c
 	g++ AlphaCalibration.c $(LINKFLAGS) $(CXXFLAGS) $(GRSISORT) -o Alphacal
-EffCheck: eff_check.cxx
-	g++ eff_check.cxx $(LINKFLAGS) $(CXXFLAGS) $(GRSISORT) -o EffCheck 
 Efficiency: eff-ge.cxx
 	g++ eff-ge.cxx $(CXXFLAGS) -o Efficiency
 
 clean:
-	rm -rf *~ SetupConfFile CustomChan ConstructCalibrationFile ChanCheck Calibrate Calibrate_LaBr ResCheck Alphacal EffCheck Efficiency *tmpdatafile*
+	rm -rf *~ SetupConfFile CustomChan ConstructCalibrationFile ChanCheck Calibrate Calibrate_LaBr ResCheck Alphacal Efficiency *tmpdatafile*
