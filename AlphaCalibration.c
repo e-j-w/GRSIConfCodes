@@ -1,397 +1,453 @@
-//g++ AlphaCalibration.c -Wl,--no-as-needed `root-config --cflags --libs --glibs` -lSpectrum -lMinuit -lGuiHtml -lTreePlayer -lTMVA -L/opt/local/lib -lX11 -lXpm -O2 -Wl,--copy-dt-needed-entries -L/opt/local/lib -lX11 -lXpm `grsi-config --cflags --all-libs --GRSIData-libs` -I$GRSISYS/GRSIData/include -o Alphacal
+//g++ AlphaCalibration.c -Wl,--no-as-needed `root-config --cflags --libs --glibs` -lSpectrum -lMinuit -lGuiHtml -lTreePlayer -lTMVA -L/opt/local/lib -lX11 -lXpm -O2 -Wl,--copy-dt-needed-entries -L/opt/local/lib -lX11 -lXpm `grsi-config --cflags --all-libs --GRSIData-libs` -I$GRSISYS/GRSIData/include -o bin/Alphacal
 
 
-#include <iostream> 
-#include <iomanip> 
-#include <fstream>
-#include <cmath>
+
+
+
+
+#include <iostream>  
+#include <iomanip>   
+#include <fstream>   
+#include <cmath>     
 #include <algorithm>
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <TCanvas.h>
-#include "TCutG.h"
-#include "TH1.h"
-#include "TF1.h"
-#include "TGraph.h"
-#include "TGraphErrors.h"
-#include "TTree.h"
-#include "TChain.h"
-#include "TH2.h"
-#include "TFile.h"
+#include <map>
+#include <utility>
+#include <string> 
+#include <stdio.h>   
+#include <stdlib.h>  
+#include "TCutG.h"   
+#include "TH1.h"     
+#include "TF1.h"     
+#include "TTree.h"   
+#include "TChain.h"  
+#include "TH2.h"     
+#include "TFile.h"   
 #include "TDirectory.h"
-#include "TList.h"
-#include "TTip.h"
+#include "TList.h"   
+#include "TTip.h"    
 #include "TTigress.h"
-#include "TRF.h"
+#include "TRF.h"     
 #include "TSpectrum.h"
 #include "TChannel.h"
 #include "TParserLibrary.h"
-#include "TEnv.h"
+#include "TEnv.h"    
 #include <dirent.h>
 
-using namespace std;
+TList *hlist;
+TList *flist;
+TH2D *sumc;
+TH2D *sume;
+std::map<int,std::pair<double, double>> calmap; // <channel, <gain,offset>>
 
-void HistDraw(string infile, char const* calfile, char const* outfile) {
-    
-    Double_t si_nBins = 4096;
-    Double_t si_min = 256;
-    Double_t si_max = 1024*16 + 256;
 
-    TList * list = new TList;
-    //TH2F *energy_channelN = new TH2F("energy_channelN","Energy vs Channel Number",4096,0,4096,20,0,20);list->Add(energy_channelN);
-    TH1F *myhist[5000];
-    char histname[20];
-    for (int iii=0;iii<2000; iii++) {
-      sprintf(histname, "Energy_ch%1.1i", iii); //Channel%d
-      myhist[iii] = new TH1F(histname, Form("myhist d%1.1i", iii), si_nBins, si_min, si_max);
+// ============= TripleAlphaHighE_Fun() ======================= //
+// TF1 formula for triple alpha source, 239Pu, 241Am, and 244Cm
+// Simulate a triple alpha spectrum for comparison to a histogram
+// Energy calibration and width of peaks are parameters given up to quadratic linear
+Double_t TripleAlphaHighE_Fun(Double_t *x, Double_t *par){
+// Parameters:
+// par[0] -- Normalization factor for 239Pu group
+// par[1] -- Normalization factor for 241Am group
+// par[2] -- Normalization factor for 244Cm group
+// par[3] -- FWHM of peaks in keV
+// par[4] -- Bg: Constant offset in counts*
+// par[5] -- Width of Pu peaks relative to Cm
+// par[6] -- Width of Am peaks relative to Cm
+// par[7] -- Offset
+// par[8] -- Linear gain
+  
+  Double_t E = par[7]+par[8]*x[0];
+  Double_t sigmaCm = par[3]/2.35;
+  Double_t sigmaPu = sigmaCm*par[5];
+  Double_t sigmaAm = sigmaCm*par[6];
+
+  Double_t return_f = par[0] * ( 0.7077 * TMath::Gaus(E,5156.59,sigmaPu)    // Pu
+                              +0.1711 * TMath::Gaus(E,5144.30,sigmaPu)
+                              +0.1194 * TMath::Gaus(E,5105.80,sigmaPu) )
+                     +par[1] * ( 0.0036 * TMath::Gaus(E,5544.5,sigmaAm)     // Am
+                              +0.0166 * TMath::Gaus(E,5388,sigmaAm)
+                              +0.848 * TMath::Gaus(E,5485.56,sigmaAm)
+                              +0.131 * TMath::Gaus(E,5442.8,sigmaAm) )
+                     +par[2] * ( 0.769 * TMath::Gaus(E,5804.77,sigmaCm)     // Cu
+                              +0.231 * TMath::Gaus(E,5762.16,sigmaCm ) )
+                     +par[4];                                               // Bg
+  return return_f;
+}
+
+
+// ============= TripleAlphaLowE_Fun() ======================= //
+// TF1 formula for triple alpha source, 148Gd, 230Th, 244Cm
+// Simulate a triple alpha spectrum for comparison to a histogram
+// Energy calibration and width of peaks are parameters given up to quadratic linear
+Double_t TripleAlphaLowE_Fun(Double_t *x, Double_t *par){
+// Parameters:
+// par[0] -- Normalization factor for 148Gd group
+// par[1] -- Normalization factor for 230Th group
+// par[2] -- Normalization factor for 244Cm group
+// par[3] -- FWHM of peaks in keV
+// par[4] -- Bg: Constant offset in counts*
+// par[5] -- Width of Gd peaks relative to Cm
+// par[6] -- Width of Th peaks relative to Cm
+// par[7] -- Offset
+// par[8] -- Linear gain
+  
+  Double_t E = par[7]+par[8]*x[0];
+  Double_t sigmaCm = par[3]/2.35;
+  Double_t sigmaGd = sigmaCm*par[5];
+  Double_t sigmaTh = sigmaCm*par[6];
+
+  Double_t return_f = par[0] * ( 1.0 * TMath::Gaus(E,3182.690,sigmaGd))
+                     +par[1] * ( 0.2340 * TMath::Gaus(E,4620.5,sigmaTh)
+                              +0.763 * TMath::Gaus(E,4687.0,sigmaTh) )
+                     +par[2] * ( 0.769 * TMath::Gaus(E,5804.77,sigmaCm)
+                              +0.231 * TMath::Gaus(E,5762.16,sigmaCm ) )
+                     +par[4];
+  return return_f;
+}
+
+// ============== PeakHunt() ================ //
+// Peak search in TH1 *hist by using TSpectrum;
+// Return a vector of x-axis position of 3 peaks with highest y-values;
+// TH1 *hist needs to zoom in a reasonable range to skip noise at low ADC channel. 
+std::vector<Double_t> PeakHunt(TH1 *hist){
+  TSpectrum *s = new TSpectrum(10); //max positions = 10
+  hist->GetXaxis()->SetRangeUser(20,1e4); // skip the nosiy peak
+  Int_t npeaks = s->Search(hist,2,"",0.13); // rough peak-search through the entire hist
+  Double_t *xpeaks = s->GetPositionX();
+  Double_t *ypeaks = s->GetPositionY();
+  std::vector<std::pair<Double_t, Double_t>> peaks;
+  for(int ipeak=0;ipeak<npeaks;ipeak++){
+    peaks.emplace_back(xpeaks[ipeak], ypeaks[ipeak]);
+  }
+  // order peaks based on y-values from highest to lowest;
+  // extract the first 3 elements (3 highest peak) and put their x-values in a new vector top_xpeaks;
+  // then order top_xpeaks from lowest to highest based on their values;
+  // extract the first and last bin, which should be centers of the first and last true alpha peaks;
+  std::sort(peaks.begin(), peaks.end(), [](const auto &m, const auto &n){return m.second > n.second;});
+  std::vector<Double_t> top_xpeaks;
+  if(npeaks>=3){
+    for(int ipeak=0;ipeak<3;ipeak++){
+      top_xpeaks.push_back(peaks[ipeak].first);
     }
+  }else{
+    for(int ipeak=0;ipeak<npeaks;ipeak++){
+      top_xpeaks.push_back(peaks[ipeak].first);
+    }
+  }
+  std::sort(top_xpeaks.begin(), top_xpeaks.end());
+  return top_xpeaks;
+}
 
-cout << "Input file: " << infile << endl; 
+// ============== tasf() =================== //
+// Return a well defined TF1 for TH1 *h fit
+// TH1 *h needs to zoom in a reasonable range to skip noise at low ADC channel. 
+// max and min should be centroids of the first and the last true alpha peaks from the source.
+// if max or min <0, which means PeakHunt() never been called. Call PeakHunt() to obtain max and min values.
+// Options:
+// c: open 2 linear calibration parameters. These two parameters are fixed as default.
+// l: set the TF1 math formula to LowE_Fun. HighE_Fun as default.
+TF1 *tasf(TH1 *h, const char* name = "tas", Double_t min=-1, Double_t max=-1, Option_t *opt=""){
+ 
+  int xbinfirst = h->GetXaxis()->GetFirst();
+  int xbinlast  = h->GetXaxis()->GetLast();
+  double fit_xlower = h->GetBinLowEdge(xbinfirst); 
+  double fit_xupper = h->GetBinLowEdge(xbinlast) + h->GetBinWidth(xbinlast); 
+  double ymax = h->GetMaximum(); 
+
+  TString sopt(opt);
+  sopt.ToLower();
+  sopt.ReplaceAll(" ","");
+  
+  TF1 *fx = 0;
+  Int_t Npx = Int_t((xbinlast-xbinfirst+1)*10);
+  
+  // Choose the fitting formula
+  if(sopt.Contains("l")){
+    fx = new TF1(name, TripleAlphaLowE_Fun, fit_xlower, fit_xupper, 9);
+    fx->SetParNames("Gd","Th","Cm","fwhmCm","bg","Gd_n","Th_n","offset","gain");
+    fx->SetParLimits(5,0.8,1.3);
+    fx->SetParLimits(6,0.8,1.2);
+    fx->SetNpx(Npx);
+    fx->SetParameters(50,50,50,25,0,1,1,0,20);
+    fx->SetParLimits(0,0,ymax*10);
+    fx->SetParLimits(1,0,ymax*10);
+    fx->SetParLimits(2,0,ymax*10);
+    fx->SetParLimits(3,20,200);
+    fx->SetParLimits(4,0,ymax);    // bg should not be higher than a true peak.
+  }else{ // default fit with TripleAlphaHighE_Fun
+    fx = new TF1(name, TripleAlphaHighE_Fun, fit_xlower,fit_xupper, 9);
+    fx->SetParNames("Pu","Am","Cm","fwhmCm","bg","Pu_n","Am_n","offset","gain");
+    fx->SetParLimits(5,0.8,1.3);
+    fx->SetParLimits(6,0.8,1.2);
+    fx->SetNpx(Npx);
+    fx->SetParameters(50,50,50,25,0,1,1,0,20);
+    fx->SetParLimits(0,0,ymax*10);
+    fx->SetParLimits(1,0,ymax*10);
+    fx->SetParLimits(2,0,ymax*10);
+    fx->SetParLimits(3,20,200);
+    fx->SetParLimits(4,0,ymax);    // bg should not be higher than a true peak.
+  }
+  
+  // Need calibration for the current histogram or not
+  if(sopt.Contains("c")){
+    // TODO: chekc the size of peaks, if peaks.size() == 0, which means the zoom in range is wrong
+    // less than 3 peaks hunting in the hist. Reset the range! 
+    if(max<0 || min<0){
+      std::vector<double> xpeaks = PeakHunt(h);
+      min = xpeaks.front();
+      max = xpeaks.back();
+      //printf("Inside loop:::max = %f\t min = %f\n", max, min);
+    }
+    //printf("Outside loop:::max = %f\t min = %f\n", max, min);
+    Double_t gain, offset;
+    if(sopt.Contains("l")){
+      gain = (5804.77-3182.69)/(max-min);
+    }else{
+      gain = (5804.77-5156.59)/(max-min);
+    }
+    offset = 5804.77 - gain*max;
+    fx->SetParameter(7,offset);  
+    fx->SetParameter(8,gain); 
+  }else{
+    fx->FixParameter(7,0);  // Calibration offset = 0
+    fx->FixParameter(8,1);  // Calibration gain   = 1
+  }
+  return fx;
+}
 
 
-  TChain *fragment = new TChain("FragmentTree");
+// ================================ After this, need GRSISort Structure ======================== //
+// Initialize global varaibles
+void Initialize(){
+  hlist = new TList; 
+  flist = new TList; 
+  sumc = new TH2D("sumc", "Channel vs Uncalibarted Charge", 1e4,0,1e4, 1e3,0,1e3); 
+  sume = new TH2D("sume", "Channel vs Calibarted Energy"  , 1e4,0,1e4, 1e3,0,1e3); 
+}
+
+
+// Make Hist from Fragment.root file for channels input in main() only
+// Hist is for uncalibrated charge
+// Save hists into the global TList *hlist;
+void MakeHist(std::string infile, const char* calfile, int minCH, int maxCH){
+
+  TChain *fragtree = new TChain("FragmentTree");
   int size = infile.find_last_of("/");
-  string directory = infile.substr(0,size);
+  std::string directory = infile.substr(0,size);
   int num = infile.find_last_of("_");
-  string runnumber = infile.substr(num-5,5);
-
-cout << "Directory: " << directory << ", Run number: " << runnumber << endl;
+  std::string runnumber = infile.substr(num-5,5);
+  std::cout << "Directory: " << directory << ", Run number: " << runnumber << std::endl;
 
   //Finds all subruns for a specific run
-  vector<string> runlist;
+  std::vector<std::string> runlist;
   DIR * pDIR;
   struct dirent * entry;
   if ((pDIR = opendir(directory.c_str()))) {
     while ((entry = readdir(pDIR))) {
       if (strstr(entry->d_name, runnumber.c_str())) {
-        string file = directory;
-	file.append("/");
-	file.append(entry->d_name);
-	if(strstr(file.c_str(),"fragment")) runlist.push_back(file);
+        std::string file = directory;
+  file.append("/");
+  file.append(entry->d_name);
+  if(strstr(file.c_str(),"fragment")) runlist.push_back(file);
       }
     }
     closedir(pDIR);
-  }
-
-  sort(runlist.begin(),runlist.end()); // Puts subruns in order
+  }   
+  std::sort(runlist.begin(),runlist.end()); // Puts subruns in order
   for(int i = 0; i<runlist.size(); i++) {
-    fragment->Add(runlist.at(i).c_str());
+    fragtree->Add(runlist.at(i).c_str());
   }
 
-  printf("%i tree files, details:\n", fragment->GetNtrees());
-  TTree *tree = (TTree *) fragment->GetTree();
-    
-    Int_t nentries = fragment->GetEntries();
-    TFragment * frag = 0;
-    fragment->SetBranchAddress("TFragment", & frag);
-    printf("Reading calibration file: %s\n", calfile);
-    TChannel::ReadCalFile(calfile);
-    int npeaks = 20;
+  long nentries = fragtree->GetEntries();
+  TFragment * tfrag = 0;
+  fragtree->SetBranchAddress("TFragment", & tfrag);
+  TChannel::ReadCalFile(calfile);
 
-    printf("Begin sort\n");
-    int one;
-    for (int jentry = 0; jentry < (nentries); jentry++) {
-      fragment->GetEntry(jentry);
-      if (frag->GetChannelNumber() >= 0) myhist[frag->GetChannelNumber()]->Fill(frag->GetEnergy());
-      if (jentry % 10000 == 0) cout << setiosflags(ios::fixed) << "Si Entry " << jentry << " of " << nentries << ", " << 100 * jentry / nentries << "% complete" << "\r" << flush;
-    }
-
-    for (int iii = 0; iii < 2000; iii++) {
-      //for(int jjj=0; jjj<200; jjj++)myhist[iii]->SetBinContent(jjj, 0);
-      if (myhist[iii]->Integral(0, si_nBins) > 10) list->Add(myhist[iii]);
-    }
-
-        cout << "Entry " << nentries << " of " << nentries << ", 100% Complete!\n";
-
-        cout << "Histograms written to Hist.root, sorting complete" << endl;
-
-        TFile * myfile = new TFile(outfile, "RECREATE");
-        myfile->cd();
-        list->Write();
-	myfile->Write();
-        myfile->Close();
-}
-
-Double_t tripleAlphaSpectrum(Double_t *xx, Double_t *p){
-// Simulate a triple alpha spectrum for comparison to a histogram
-// Energy calibration and width of peaks are parameters given up to quadratic linear
-// Parameters:
-// p0 -- Normalization factor for 239Pu group
-// p1 -- Normalization factor for 241Am group
-// p2 -- Normalization factor for 244Cm group
-// p3 -- FWHM of peaks in keV
-// p4 -- Constant offset in counts*
-// p5 -- Width of Pu peaks relative to Cm
-// p6-- Width of Am peaks relative to Cm
-// p7 -- Offset
-// p8-- Linear gain
- Double_t E = p[7]+p[8]*xx[0];
- Double_t sigmaCu = p[3]/2.35;
- Double_t sigmaPu = sigmaCu*p[5];
- Double_t sigmaAm = sigmaCu*p[6];
-// Now calculate spectrum height based on energies and proportionalities
- /*Double_t f = p[0] * ( 1.0 * TMath::Gaus(E,3182.690,sigmaPu))
-        +p[1] * ( 0.2340 * TMath::Gaus(E,4620.5,sigmaAm)
-           +0.763 * TMath::Gaus(E,4687.0,sigmaAm) )
-        +p[2] * ( 0.769 * TMath::Gaus(E,5804.77,sigmaCu)
-           +0.231 * TMath::Gaus(E,5762.16,sigmaCu ) )
-        +p[4]; //148Gd,230Th,244cm source*/
- Double_t f = p[0] * ( 0.7077 * TMath::Gaus(E,5156.59,sigmaPu)
-          +0.1711 * TMath::Gaus(E,5144.30,sigmaPu)
-          +0.1194 * TMath::Gaus(E,5105.80,sigmaPu) )
-        +p[1] * ( 0.0036 * TMath::Gaus(E,5544.5,sigmaAm)
-           +0.0166 * TMath::Gaus(E,5388,sigmaAm)
-           +0.848 * TMath::Gaus(E,5485.56,sigmaAm)
-           +0.131 * TMath::Gaus(E,5442.8,sigmaAm) )
-        +p[2] * ( 0.769 * TMath::Gaus(E,5804.77,sigmaCu)
-           +0.231 * TMath::Gaus(E,5762.16,sigmaCu ) )
-        +p[4];
-  return f;
-}
-TF1* tasf(TH1* h, const char* name = "tas"){
-// Create a TF1 using the function above and set some intial parameters
- TF1* F = new TF1(name,tripleAlphaSpectrum,0,10000,9); //this sets the limits of the fit in channels (see also line 93)
- F->SetParNames("Pu","Am","Cm","fwhmCm","a","Pu_n","Am_n","offset","gain");
- F->SetNpx(7000);
- F->SetParLimits(0,10,500000);
- F->SetParLimits(1,10,500000);
- F->SetParLimits(2,10,500000);
- F->SetParLimits(3,20,200);
- F->SetParLimits(5,0.8,1.3);
- F->SetParLimits(6,0.8,1.2);
-// Search for the peaks in the charge spectrum to initialize gain and offset
- vector< Double_t > peaks;
- int npeaks = 20;
- TSpectrum * s = new TSpectrum(2*npeaks);
- Int_t nfound = s->Search(h, 2, "", 0.13);
- if (nfound>=3){
-    Double_t * xpeaks = s->GetPositionX();  
-    for (int oo=0; oo<=nfound; oo++){
-       if (xpeaks[oo]>200 and xpeaks[oo]<10000){
-          peaks.push_back(xpeaks[oo]); 
-          cout << "peak: " << xpeaks[oo] << endl;  
-      }
-    }
-    auto min = *std::min_element( peaks.begin(), peaks.end());
-    auto max = *std::max_element( peaks.begin(), peaks.end());
-    Double_t m = (5804.77-5156.59)/(max-min);
-    //Double_t m = (5804.77-3182.690)/(max-min);
-    Double_t b = 5804.77-m*max; 
-//Initializing Parameters
-    F->SetParameters(50,50,50,25,0,1,1,b,m);
-    F->SetParLimits(7,b-100,b+100);
-    F->SetParLimits(8,m-0.4,m+0.4);
- }
- return F;
-}
-TH1* getHistFromFile(const char* fn, const char* objpath){
- TFile* F = TFile::Open(fn);
- TFolder* Fo;
- TH1* H;
- F->GetObject(objpath,H);
- //=== Add if(H) for SetTitle() and Draw() ===//
- // To avoid segment breaking when H is empty //
- // Empty H can still return =================//
- if(H){
-  H->SetTitle(fn);
-  H->Draw("hist && E");
- }
- return H;
-}
-TF1* zoomThree(TH1* h, TF1* F){
-// Function to zoom h around the peaks for fitting
- Double_t g = F->GetParameter("gain");
- Double_t o = F->GetParameter("offset");
- h->GetXaxis()->SetRange((800-o)/g,(2500-o)/g); //this sets the region to zoom the plot into
- h->Draw();
- return F;
-}
-void Peaks(Double_t ratio, Double_t constant, Double_t mean, Double_t sigma){
-// Function to draw the individual peaks of the main fit
-   TF1 *myfit = new TF1("myfit","gaus",0,10000); //this sets the limits of the fit in channels (see also line 41)
-   myfit->SetParameters(ratio * constant , mean , sigma);
-   myfit->SetLineColor(3);
-   myfit->Draw("SAME");
-}
-
-// Find resolutions of Cm for the working channels using the functions above
-// Only channels start to end 
-void m( int start, int end){
-   gROOT->SetBatch(kTRUE);
-   vector< double > workingchannels;
-   vector< double > warr;
-   vector< double > werrarr;
-   vector< double > rchiarr;
-   vector< double > OFFSET;
-   vector< double > GAIN;
-   TList * list = new TList;
-   TCanvas * C[end-start];
-   //string histfile;
-   //cout << "\nEnter the name of the histogram file.\n";
-   //getline(cin, histfile);
-   for (int iii=start; iii<=end; iii++){
-// Create canvases that will be output to TAS.root
-      C[iii-start] = new TCanvas(Form("c%1.1i",iii),Form("c%1.1i",iii),30,113,
-      800,600);
-      C[iii-start]->Range(0,-10,60,600);
-// Gather, draw, zoom around, and fit data. To display fit parameters, remove Q
-// Open the histograms by objpath (ie. Energy_ch##) within fmc32.root (fn)
-// For analyzing SHARC data, (ie. Channel##) with oldsharc.root or newsharc.root
-      //string hist;
-     // cout << "\nEnter the histogram file name.\n";
-      //getline(cin, hist);
-      // ==== May return empty hist from getHistFromFile() ==== //
-      // ==== empty h can't input to zoomThree() or h->Fit() == //
-      // ==== default gain = 1 and offset = 0 for empty hist == //
-      TH1* h = getHistFromFile("Hist.root",Form("Energy_ch%1.1i",iii));  
-      cout << iii << " :";   
-      TF1* f=tasf(h); 
-      if(h){
-        f = zoomThree(h,f); f->Draw("SAME"); f = zoomThree(h,f); 
-        h->Fit("tas","LQ"); h->Fit("tas","LQ");
+  long xentry = 0;
+  for(xentry;xentry<nentries;xentry++){
+    fragtree->GetEntry(xentry);
+    int chnum = tfrag->GetChannelNumber();
+    if(chnum>=minCH && chnum<=maxCH){
+      double charge = tfrag->GetCharge();
+      if(calmap.empty()){
+        sumc->Fill(charge,chnum);
       }else{
-        f->SetParameter("gain",1);
-        f->SetParameter("offset",0);
+        double energy = charge*calmap[chnum].first + calmap[chnum].second;
+        sume->Fill(energy,chnum);
       }
-// Get parameters, FWHM, and draw the individual peaks    
-      Double_t g = f->GetParameter("gain");  
-      Double_t o = f->GetParameter("offset");     
-      Double_t fwhmCm = f->GetParameter("fwhmCm");
-      Double_t fwhmCuerr = f->GetParError(3);
-      Double_t rchi2 = f->GetChisquare()/f->GetNDF();
-      Double_t sigmaCm = fwhmCm/2.35;
-      Double_t Pu_n = f->GetParameter("Pu_n"); Double_t sigmaPu = (Pu_n*sigmaCm);
-      Double_t Am_n = f->GetParameter("Am_n"); Double_t sigmaAm = (Am_n*sigmaCm);
-      Double_t Cm = f->GetParameter("Cm");
-      Double_t Pu = f->GetParameter("Pu");
-      Double_t Am = f->GetParameter("Am");
-      Double_t ratios[9]={0.7077,0.1711,0.1194,0.0036,0.0166,0.848,0.131,0.769,
-      0.231};
-      Double_t constants[9]={Pu,Pu,Pu,Am,Am,Am,Am,Cm,Cm};           
-      Double_t means[9]={(5156.59-o)/g,(5144.30-o)/g,(5105.80-o)/g,(5544.5-o)/g,
-      (5388-o)/g,(5485.56-o)/g,(5442.8-o)/g,(5804.77-o)/g,(5762.16-o)/g};
-      Double_t sigmas[9]={sigmaPu/g,sigmaPu/g,sigmaPu/g,sigmaAm/g,sigmaAm/g,
-      sigmaAm/g,sigmaAm/g,sigmaCm/g,sigmaCm/g};
-      for (int ii=7; ii<8; ii++){
-         Peaks(ratios[ii],constants[ii],means[ii],sigmas[ii]);
+    }
+    if((xentry%10000)==0){
+      printf("Making Hist on entry: %lu / %lu \r", xentry, nentries);
+      fflush(stdout);
+    }
+  }
+  printf("Making Hist DONE!  Entry: %lu / %lu \n", xentry, nentries);
+
+  if(calmap.empty()){
+    for(int i=0;i<1000;i++){
+      if(i>=minCH && i<=maxCH) {
+        TH1D *hist = sumc->ProjectionX(Form("Charge_CH%i",i),i+1,i+1);
+        hlist->Add(hist);
       }
-// Add canvas to list      
-      list->Add(C[iii-start]);  
-// Add the FWHM and error of Curium peak
-      workingchannels.push_back(iii);
-      warr.push_back(fwhmCm);
-      werrarr.push_back(fwhmCuerr);
-      rchiarr.push_back(rchi2);
-      OFFSET.push_back(o);
-      GAIN.push_back(g);
-   }
-// Output the widths of Curium for each channel and its absolute error
-   cout << "CHANNEL" << "\t" << "FWHM (keV)" << "\t\t" << "ERR" << "\t\t" 
-   << "REDUCED CHISQR" << endl;
-// Output gains and offsets to a text file
-   ofstream file;
-   file.open ("Calibration.txt");
-   file << "float GAIN[" << end - start + 1 << "] = {" << GAIN[0];
-   for (int j=0; j<warr.size(); j++){    
-      cout << workingchannels[j] << ",\t" << warr[j] << ",\t\t" << werrarr[j] 
-      << ",\t" << rchiarr[j] << endl;
-      if (j > 0) {
-         file << ", " << GAIN[j];
-      }
-   } 
-   file << "};\n" << "float OFFSET[" << end - start + 1 << "] = {" << OFFSET[0];
-   for (int j=0; j<warr.size(); j++){    
-      if (j > 0) {
-         file << ", " << OFFSET[j];
-      }
-   } 
-   file << "};"; 
-   file.close();
-   cout << "Writing gains and offsets to " << "Calibration.txt" << endl;
-   
-// Write canvases to TAS.root
-   cout << "Writing histograms to " << "TAS.root" << endl;
-   TFile * myfile = new TFile("TAS.root", "RECREATE");
-   myfile->cd();
-   list->Write();
-   myfile->Close();
+    }
+  }
+}
+
+// Run this after "MakeHist()"
+// Fit hists generated in MakeHist()
+// Fill hists and TF1*fit to Hist.root
+// Save gain[] and offsets[] array to Calibration.txt
+void CalHist(int minCH, int maxCH, Option_t *opt=""){
+
+  std::vector<int> vec_chan; 
+  std::vector<double> vec_gain; 
+  std::vector<double> vec_offs; 
+  std::vector<double> vec_rePu; 
+  std::vector<double> vec_reAm; 
+  std::vector<double> vec_reCm; 
+
+  for(int ich=minCH; ich<=maxCH; ich++){
+    TH1D *hist = (TH1D *)hlist->FindObject(Form("Charge_CH%i",ich));
+    vec_chan.push_back(ich);
+    std::vector<Double_t> top_xpeaks = PeakHunt(hist);
+    //for(int i=0;i<top_xpeaks.size();i++){
+    //  printf("HELLO WORLD\txpeak[%i] = %f\n",i, top_xpeaks.at(i));
+    //}
+    if(top_xpeaks.size()<3){
+      //found # of peaks < 3. something wrong with the current hist
+      vec_gain.push_back(1);
+      vec_offs.push_back(0);
+      vec_reCm.push_back(-1);
+      vec_reAm.push_back(-1);
+      vec_rePu.push_back(-1);
+    }else{
+      Double_t min = top_xpeaks.front();
+      Double_t max = top_xpeaks.back();
+      double xwidth = (max-min)/2.;
+      hist->GetXaxis()->SetRangeUser(min-xwidth, max+xwidth);  
+      TF1 *fc = tasf(hist, Form("fc_CH%i",ich), min,max,"c");
+      hist->Fit(fc,"LQ");     
+      hist->Fit(fc,"LQ");     
+      flist->Add(fc);
+      double gain = fc->GetParameter("gain");
+      double offset = fc->GetParameter("offset");
+      double reCm = fc->GetParameter("fwhmCm");
+      double reAm = reCm * fc->GetParameter(6);
+      double rePu = reCm * fc->GetParameter(5);
+      vec_gain.push_back(gain); 
+      vec_offs.push_back(offset); 
+      vec_reCm.push_back(reCm); 
+      vec_reAm.push_back(reAm);
+      vec_rePu.push_back(rePu);
+    }
+    calmap[vec_chan.back()] = std::make_pair(vec_gain.back(), vec_offs.back());
+  } // hist loop end 
+
+  // Output With
+  std::cout << "CHANNEL" << "\t" 
+            << "FWHM(Pu)"<< "\t\t"
+            << "FWHM(Am)"<< "\t\t"
+            << "FWHM(Cm)"<< "\t\t"
+            << "GAIN"    << "\t\t"
+            << "OFFSET"  << std::endl;
+  // Write parameters into the txt file
+  std::ofstream outfile;
+  outfile.open("Calibration.txt");
+  outfile << "float GAIN[" << vec_gain.size() <<"] = {" << vec_gain[0];
+  for(int i=0;i<vec_chan.size();i++){
+    std::cout << vec_chan[i] << "\t"
+              << vec_rePu[i] << "\t\t"
+              << vec_reAm[i] << "\t\t"
+              << vec_reCm[i] << "\t\t"
+              << vec_gain[i] << "\t\t"
+              << vec_offs[i] << std::endl;
+    if(i>0){
+      outfile << ", " << vec_gain[i];
+    }
+  }
+  outfile << "};\n" << "float OFFSET[" << vec_offs.size() << "] = {" << vec_offs[0];
+  for(int i=1;i<vec_chan.size();i++){
+    outfile << ", " << vec_offs[i];
+  }
+  outfile << "};";
+  outfile.close();
+  std::cout << "Writing gains and offsets to " << "Calibration.txt" << std::endl;
+
+}
+
+
+// =============== mian() ================ //
+// Input File:
+// 1. FragmentTree.root.file
+// 2. Calibration.file
+// 3. Min channel number
+// 4. Max channel number
+int main(int agrc, char **agrv){
+  char const *infile;
+  char const *calfile;
+  char const *outfile;
+  char const *ChMin;
+  char const *ChMax;
+  int ChMin_int;
+  int ChMax_int;
+
+
+  // Finds the GRSISYS path to be used by other parts of the grsisort code
+  std::string grsi_path = getenv("GRSISYS"); 
+  if(grsi_path.length() > 0) {
+    grsi_path += "/"; 
+  }
+  // Read in grsirc in the GRSISYS directory to set user defined options on grsisort startup
+  grsi_path += ".grsirc";
+  gEnv->ReadFile(grsi_path.c_str(), kEnvChange);
+
+  if(agrc<5){
+    std::cout << "Insufficient arguments, provide fragmenttree file + CalibrationFile + min_Ch + max Ch" << std::endl;
+    return 0;
+  }else if(agrc==5){
+    infile  = agrv[1];
+    calfile = agrv[2];
+    ChMin   = agrv[3];
+    ChMax   = agrv[4];
+  }else{
+    printf("Too many arguments\n");
+    return 0;
+  }
+
+  TParserLibrary::Get()->Load();
   
-   if(GAIN.size()!=(end-start+1) || OFFSET.size()!=(end-start+1)){
-     printf("\n\n\nWARNING!!! Calibration parameter array size doesn't match the number or channels!\n\n\n ");
-   }
+  ChMin_int = atoi(ChMin);
+  ChMax_int = atoi(ChMax);
+ 
+  Initialize(); 
+  MakeHist(infile,calfile,ChMin_int,ChMax_int);
+  CalHist(ChMin_int,ChMax_int);
+  MakeHist(infile,calfile,ChMin_int,ChMax_int);
+  
+  outfile = "Hist.root";
+  TFile *newf = new TFile(outfile, "recreate");
+  newf->cd();
+  sumc->Write();
+  sume->Write();
+  hlist->Write();
+  flist->Write();
+  newf->Close();
+  printf("Input file:%s\nCalibration file: %s\nOutput File: %s\nStarting Channel: %s\nEnding Channel: %s\n",infile,calfile,outfile,ChMin,ChMax);
+  
+
+  return 0;
 }
 
-int main(int argc, char **argv){
-	
-	char const *ffile;
-	char const *calfile;
-	char const *outfile;
-	char const *ChMin;
-        char const *ChMax;
-	int ChMin_int;
-	int ChMax_int;
 
-	printf("Starting sortcode\n");
 
-  	std::string grsi_path = getenv("GRSISYS"); // Finds the GRSISYS path to be used by other parts of the grsisort code
-  	if(grsi_path.length() > 0) {
-	  grsi_path += "/";
- 	}
-  	// Read in grsirc in the GRSISYS directory to set user defined options on grsisort startup
-	grsi_path += ".grsirc";
-  	gEnv->ReadFile(grsi_path.c_str(), kEnvChange);
 
-	if(argc == 1)
-	{
-		cout << "Insufficient arguments, provide argument tree files" << endl;
-		return 0;
-	}
 
-	else if(argc == 2)
-	{
-		ffile = argv[1];
-		calfile = "CalibrationFile.cal";
-		ChMin = "0";
-	  ChMax = "55";
-	}
-	else if(argc == 3)
-	{
-		ffile   = argv[1];
-		calfile = argv[2];
-		ChMin = "0";
-		ChMax = "55";
-	}
-	else if(argc == 4)
-	{
-		ffile   = argv[1];
-		calfile = argv[2];
-		ChMin = argv[3];
-		ChMax = "55";
-	}
-	else if(argc == 5)
-	{
-		ffile   = argv[1];
-		calfile = argv[2];
-		ChMin = argv[3];
-		ChMax = argv[4];
-	}
-	else if(argc > 5)
-	{
-		printf("Too many arguments\n");
-		return 0;
-	}
 
-	outfile = "Hist.root";
 
-	printf("Input file:%s\nCalibration file: %s\nOutput File: %s\nStarting Channel: %s\nEnding Channel: %s\n",ffile,calfile,outfile,ChMin,ChMax);
-  	TParserLibrary::Get()->Load();
-	
-	//Convert the channel minimum and maximum characters to integers so they can be used as input in m()
-	ChMin_int = atoi(ChMin);
-	ChMax_int = atoi(ChMax);
 
-	HistDraw(ffile,calfile, outfile);
-	m(ChMin_int,ChMax_int);
-	return 0;
-}
+
+
+
+
+
 
